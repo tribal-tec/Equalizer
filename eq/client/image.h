@@ -188,6 +188,8 @@ public:
     /** @return the pixel data, compressing it if needed. @version 1.0 */
     EQ_API const PixelData& compressPixelData( const Frame::Buffer );
 
+    EQ_API void compressPixelData();
+
     /**
      * @return true if the image has valid pixel data for the buffer.
      * @version 1.0
@@ -385,6 +387,12 @@ public:
 
     /** @internal */
     EQ_API uint32_t getDownloaderName( const Frame::Buffer buffer ) const;
+
+    /** @internal */
+    void serialize( co::DataOStream& os ) const;
+
+    /** @internal */
+    void deserialize( co::DataIStream& is );
     //@}
 
 private:

@@ -102,19 +102,19 @@ namespace detail { class Frame; }
         const std::vector< uint128_t >& getInputNodes( const Eye eye ) const;
 
         /** @internal @return the receiving co::Node IDs of an output frame */
-        EQFABRIC_API const co::NodeIDs& getInputNetNodes(const Eye eye) const;
+        EQFABRIC_API const co::NodeIDs& getInputNetNodes( const Eye eye ) const;
 
     protected:
-        virtual ChangeType getChangeType() const { return INSTANCE; }
-        EQFABRIC_API virtual void getInstanceData( co::DataOStream& os );
-        EQFABRIC_API virtual void applyInstanceData( co::DataIStream& is );
+        ChangeType getChangeType() const override { return INSTANCE; }
+        EQFABRIC_API void getInstanceData( co::DataOStream& os ) override;
+        EQFABRIC_API void applyInstanceData( co::DataIStream& is ) override;
 
         /** @internal */
         EQFABRIC_API void _setDataVersion( const unsigned i,
                                            const co::ObjectVersion& ov );
 
         /** @internal @return the receiving eq::Node IDs of an output frame */
-        EQFABRIC_API std::vector< uint128_t >& _getInputNodes( const unsigned i );
+        EQFABRIC_API std::vector< uint128_t >& _getInputNodes( const unsigned );
 
         /** @internal @return the receiving co::Node IDs of an output frame */
         EQFABRIC_API co::NodeIDs& _getInputNetNodes( const unsigned i );
@@ -134,6 +134,8 @@ namespace detail { class Frame; }
 
 namespace lunchbox
 {
+template<> inline void byteswap( eq::fabric::Frame::Buffer& value )
+    { byteswap( reinterpret_cast< uint32_t& >( value )); }
 template<> inline void byteswap( eq::fabric::Frame::Type& value )
     { byteswap( reinterpret_cast< uint32_t& >( value )); }
 }

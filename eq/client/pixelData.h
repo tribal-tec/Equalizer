@@ -82,15 +82,38 @@ struct PixelData : public boost::noncopyable
     PixelViewport pvp;
 
     /** uncompressed pixel data, pvp * pixelSize bytes. @version 1.0 */
-    void* pixels;
+    //void* pixels;
+
+    void*& pixels();
+    const void* pixels() const;
+    void setPixels( void* data, const size_t size );
 
     /** The compressed pixel data blocks. @version 1.9.1 */
     lunchbox::CompressorResult compressedData;
 
     /** The compressor used to produce compressedData. @version 1.0 */
-    uint32_t compressorName;
+    //uint32_t compressorName;
 
     uint32_t compressorFlags; //!< Flags used for compression. @version 1.0
+
+    /** @internal */
+    void serialize( co::DataOStream& os ) const;
+
+    /** @internal */
+    void deserialize( co::DataIStream& is );
 };
-};
+}
+
+namespace lunchbox
+{
+template<> inline void byteswap( eq::PixelData& value )
+{
+    //byteswap( value.compressedData );
+    byteswap( value.compressorFlags );
+    byteswap( value.externalFormat );
+    byteswap( value.internalFormat );
+    byteswap( value.pixelSize );
+    byteswap( value.pvp );
+}
+}
 #endif // EQ_PIXELDATA_H

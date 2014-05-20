@@ -675,7 +675,7 @@ bool Node::_cmdFrameFinish( co::ICommand& cmd )
 
     const uint128_t version = commit();
     if( version != co::VERSION_NONE )
-        send( command.getNode(), fabric::CMD_OBJECT_SYNC );
+        send( command.getRemoteNode(), fabric::CMD_OBJECT_SYNC );
     return true;
 }
 
@@ -711,20 +711,8 @@ bool Node::_cmdFrameDataTransmit( co::ICommand& cmd )
     co::ObjectICommand command( cmd );
 
     const co::ObjectVersion& frameDataVersion =
-                                             command.read< co::ObjectVersion >();
-    const PixelViewport& pvp = command.read< PixelViewport >();
-    const Zoom& zoom = command.read< Zoom >();
-    const uint32_t buffers = command.read< uint32_t >();
+                                            command.read< co::ObjectVersion >();
     const uint32_t frameNumber = command.read< uint32_t >();
-    const bool useAlpha = command.read< bool >();
-    const uint8_t* data = reinterpret_cast< const uint8_t* >(
-                command.getRemainingBuffer( command.getRemainingBufferSize( )));
-
-    LBLOG( LOG_ASSEMBLY )
-        << "received image data for " << frameDataVersion << ", buffers "
-        << buffers << " pvp " << pvp << std::endl;
-
-    LBASSERT( pvp.isValid( ));
 
     FrameDataPtr frameData = getFrameData( frameDataVersion );
     LBASSERT( !frameData->isReady() );
@@ -732,11 +720,7 @@ bool Node::_cmdFrameDataTransmit( co::ICommand& cmd )
     NodeStatistics event( Statistic::NODE_FRAME_DECOMPRESS, this,
                           frameNumber );
 
-    // Note on the const_cast: since the PixelData structure stores non-const
-    // pointers, we have to go non-const at some point, even though we do not
-    // modify the data.
-    LBCHECK( frameData->addImage( frameDataVersion, pvp, zoom, buffers,
-                                  useAlpha, const_cast< uint8_t* >( data )));
+    frameData->addImage( command );
     return true;
 }
 

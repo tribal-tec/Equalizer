@@ -1311,32 +1311,19 @@ void Channel::_asyncTransmit( FrameDataPtr frame, const uint32_t frameNumber,
     }
 }
 
-void Channel::_transmitImage( const co::ObjectVersion& frameDataVersion,
+void Channel::_transmitImage( Image& image,
+                              const co::ObjectVersion& frameDataVersion,
                               const uint128_t& nodeID,
-                              const co::NodeID& netNodeID,
-                              const uint64_t imageIndex,
+                              const co::NodeID& remoteNodeID,
                               const uint32_t frameNumber,
                               const uint32_t taskID )
 {
     LBLOG( LOG_TASKS|LOG_ASSEMBLY ) << "Transmit" << std::endl;
-    FrameDataPtr frameData = getNode()->getFrameData( frameDataVersion );
-    LBASSERT( frameData );
-
-    if( frameData->getBuffers() == 0 )
-    {
-        LBWARN << "No buffers for frame data" << std::endl;
-        return;
-    }
-
     ChannelStatistics transmitEvent( Statistic::CHANNEL_FRAME_TRANSMIT, this,
                                      frameNumber );
     transmitEvent.event.data.statistic.task = taskID;
 
-    const Images& images = frameData->getImages();
-    Image* image = images[ imageIndex ];
-    LBASSERT( images.size() > imageIndex );
-
-    if( image->getStorageType() == Frame::TYPE_TEXTURE )
+    if( image.getStorageType() == Frame::TYPE_TEXTURE )
     {
         LBWARN << "Can't transmit image of type TEXTURE" << std::endl;
         LBUNIMPLEMENTED;
@@ -1344,150 +1331,50 @@ void Channel::_transmitImage( const co::ObjectVersion& frameDataVersion,
     }
 
     co::LocalNodePtr localNode = getLocalNode();
-    co::NodePtr toNode = localNode->connect( netNodeID );
-    if( !toNode || !toNode->isReachable( ))
+    co::NodePtr remoteNode = localNode->connect( remoteNodeID );
+    if( !remoteNode || !remoteNode->isReachable( ))
     {
-        LBWARN << "Can't connect node " << netNodeID << " to send output frame"
-               << std::endl;
+        LBWARN << "Can't connect node " << remoteNodeID
+               << " to send output frame" << std::endl;
         return;
     }
 
-    co::ConnectionPtr connection = toNode->getConnection();
-    co::ConstConnectionDescriptionPtr description =connection->getDescription();
-
-    // use compression on links up to 2 GBit/s
-    const bool useCompression = ( description->bandwidth <= 262144 );
-
-    std::vector< const PixelData* > pixelDatas;
-    std::vector< float > qualities;
-
-    uint32_t commandBuffers = Frame::BUFFER_NONE;
-    uint64_t imageDataSize = 0;
-
-    {
-        uint64_t rawSize( 0 );
-        ChannelStatistics compressEvent( Statistic::CHANNEL_FRAME_COMPRESS,
-                                         this, frameNumber,
-                                         useCompression ? AUTO : OFF );
-        compressEvent.event.data.statistic.task = taskID;
-        compressEvent.event.data.statistic.ratio = 1.0f;
-        compressEvent.event.data.statistic.plugins[0] = EQ_COMPRESSOR_NONE;
-        compressEvent.event.data.statistic.plugins[1] = EQ_COMPRESSOR_NONE;
-
-        // Prepare image pixel data
-        Frame::Buffer buffers[] = {Frame::BUFFER_COLOR,Frame::BUFFER_DEPTH};
-
-        // for each image attachment
-        for( unsigned j = 0; j < 2; ++j )
-        {
-            Frame::Buffer buffer = buffers[j];
-            if( image->hasPixelData( buffer ))
-            {
-                // format, type, nChunks, compressor name
-                imageDataSize += sizeof( FrameData::ImageHeader );
-
-                const PixelData& data = useCompression ?
-                    image->compressPixelData( buffer ) :
-                    image->getPixelData( buffer );
-                pixelDatas.push_back( &data );
-                qualities.push_back( image->getQuality( buffer ));
-
-                if( data.compressedData.isCompressed( ))
-                {
-                    imageDataSize += data.compressedData.getSize() +
-                        data.compressedData.chunks.size() * sizeof( uint64_t );
-                    compressEvent.event.data.statistic.plugins[j] =
-                        data.compressedData.compressor;
-                }
-                else
-                    imageDataSize += sizeof( uint64_t ) +
-                                     image->getPixelDataSize( buffer );
-
-                commandBuffers |= buffer;
-                rawSize += image->getPixelDataSize( buffer );
-            }
-        }
-
-        if( rawSize > 0 )
-            compressEvent.event.data.statistic.ratio =
-            static_cast< float >( imageDataSize ) /
-            static_cast< float >( rawSize );
-    }
-
-    if( pixelDatas.empty( ))
-        return;
-
-    // send image pixel data command
     co::LocalNode::SendToken token;
     if( getIAttribute( IATTR_HINT_SENDTOKEN ) == ON )
     {
         ChannelStatistics waitEvent( Statistic::CHANNEL_FRAME_WAIT_SENDTOKEN,
                                      this, frameNumber );
         waitEvent.event.data.statistic.task = taskID;
-        token = getLocalNode()->acquireSendToken( toNode );
+        token = localNode->acquireSendToken( remoteNode );
     }
-    LBASSERT( image->getPixelViewport().isValid( ));
 
+    co::ConnectionPtr connection = remoteNode->getConnection();
+    co::ConstConnectionDescriptionPtr description =connection->getDescription();
+
+    // use compression on links up to 2 GBit/s
+    const bool useCompression = ( description->bandwidth <= 262144 );
+
+    // send image pixel data command
     co::ObjectOCommand command( co::Connections( 1, connection ),
                                 fabric::CMD_NODE_FRAMEDATA_TRANSMIT,
                                 co::COMMANDTYPE_OBJECT, nodeID,
                                 CO_INSTANCE_ALL );
-    command << frameDataVersion << image->getPixelViewport() << image->getZoom()
-            << commandBuffers << frameNumber << image->getAlphaUsage();
-    command.sendHeader( imageDataSize );
+    command << frameDataVersion << frameNumber;
 
-#ifndef NDEBUG
-    size_t sentBytes = 0;
-#endif
-
-    for( uint32_t j=0; j < pixelDatas.size(); ++j )
+    if( useCompression )
     {
-#ifndef NDEBUG
-        sentBytes += sizeof( FrameData::ImageHeader );
-#endif
-        const PixelData* data = pixelDatas[j];
-        const bool isCompressed = data->compressedData.isCompressed();
-        const uint32_t nChunks = isCompressed ?
-            uint32_t( data->compressedData.chunks.size( )) : 1;
+        ChannelStatistics compressEvent( Statistic::CHANNEL_FRAME_COMPRESS,
+                                         this, frameNumber );
+        compressEvent.event.data.statistic.task = taskID;
 
-        const FrameData::ImageHeader header =
-              { data->internalFormat, data->externalFormat,
-                data->pixelSize, data->pvp,
-                isCompressed ? data->compressedData.compressor :
-                               EQ_COMPRESSOR_NONE,
-                data->compressorFlags, nChunks, qualities[ j ] };
+        image.compressPixelData();
 
-        connection->send( &header, sizeof( header ), true );
-
-        if( isCompressed )
-        {
-            BOOST_FOREACH( const lunchbox::CompressorChunk& chunk,
-                           data->compressedData.chunks )
-            {
-                const uint64_t dataSize = chunk.getNumBytes();
-
-                connection->send( &dataSize, sizeof( dataSize ), true );
-                if( dataSize > 0 )
-                    connection->send( chunk.data, dataSize, true );
-#ifndef NDEBUG
-                sentBytes += sizeof( dataSize ) + dataSize;
-#endif
-            }
-        }
-        else
-        {
-            const uint64_t dataSize = data->pvp.getArea() * data->pixelSize;
-            connection->send( &dataSize, sizeof( dataSize ), true );
-            connection->send( data->pixels, dataSize, true );
-#ifndef NDEBUG
-            sentBytes += sizeof( dataSize ) + dataSize;
-#endif
-        }
+        compressEvent.event.data.statistic.ratio = 1.0f; // TODO
+        compressEvent.event.data.statistic.plugins[0] = EQ_COMPRESSOR_NONE; // TODO
+        compressEvent.event.data.statistic.plugins[1] = EQ_COMPRESSOR_NONE; // TODO
     }
-#ifndef NDEBUG
-    LBASSERTINFO( sentBytes == imageDataSize,
-        sentBytes << " != " << imageDataSize );
-#endif
+
+    image.serialize( command );
 }
 
 void Channel::_setReady( const bool async, detail::RBStat* stat,
@@ -1823,18 +1710,32 @@ bool Channel::_cmdFrameSetReady( co::ICommand& cmd )
 bool Channel::_cmdFrameTransmitImage( co::ICommand& cmd )
 {
     co::ObjectICommand command( cmd );
-    const co::ObjectVersion& frameData = command.read< co::ObjectVersion >();
+    const co::ObjectVersion& frameDataVersion =
+            command.read< co::ObjectVersion >();
     const uint128_t& nodeID = command.read< uint128_t >();
-    const co::NodeID& netNodeID = command.read< co::NodeID >();
+    const co::NodeID& remoteNodeID = command.read< co::NodeID >();
     const uint64_t imageIndex = command.read< uint64_t >();
     const uint32_t frameNumber = command.read< uint32_t >();
     const uint32_t taskID = command.read< uint32_t >();
 
     LBLOG( LOG_TASKS|LOG_ASSEMBLY ) << "Transmit " << command << " frame data "
-                                    << frameData << " receiver " << nodeID
-                                    << " on " << netNodeID << std::endl;
+                                    << frameDataVersion << " receiver "
+                                    << nodeID << " on " << remoteNodeID
+                                    << std::endl;
 
-    _transmitImage( frameData, nodeID, netNodeID, imageIndex, frameNumber,
+    FrameDataPtr frameData = getNode()->getFrameData( frameDataVersion );
+    LBASSERT( frameData );
+    if( frameData->getBuffers() == 0 )
+    {
+        LBWARN << "No buffers for frame data" << std::endl;
+        return true;
+    }
+
+    const Images& images = frameData->getImages();
+    Image* image = images[ imageIndex ];
+    LBASSERT( images.size() > imageIndex );
+    LBASSERT( image->getPixelViewport().isValid( ));
+    _transmitImage( *image, frameDataVersion, nodeID, remoteNodeID, frameNumber,
                     taskID );
     _unrefFrame( frameNumber );
     return true;

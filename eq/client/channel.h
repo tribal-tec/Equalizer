@@ -44,7 +44,7 @@ class Channel : public fabric::Channel< Window, Channel >
 {
 public:
     /** Construct a new channel. @version 1.0 */
-    EQ_API Channel( Window* parent );
+    EQ_API explicit Channel( Window* parent );
 
     /** Destruct the channel. @version 1.0 */
     EQ_API virtual ~Channel();
@@ -279,7 +279,7 @@ public:
      * optimize compositing and load balancing for each frame.
      * @version 1.3
      */
-    EQ_API virtual void resetRegions();
+    EQ_API void resetRegions();
 
     /**
      * Declare a region covered by the current draw or assemble operation.
@@ -295,7 +295,7 @@ public:
      *
      * @version 1.3
      */
-    EQ_API virtual void declareRegion( const eq::PixelViewport& region );
+    EQ_API void declareRegion( const eq::PixelViewport& region );
 
     /**
      * Convenience method to declare a region in relative coordinates.
@@ -362,7 +362,7 @@ public:
 
 protected:
     /** @internal */
-    EQ_API void attach( const uint128_t& id, const uint32_t instanceID );
+    EQ_API void attach( const uint128_t& id, const uint32_t instanceID ) final;
 
     /** @name Actions */
     //@{
@@ -588,10 +588,10 @@ private:
     void _unrefFrame( const uint32_t frameNumber );
 
     /** Transmit one image of a frame to one node. */
-    void _transmitImage( const co::ObjectVersion& frameDataVersion,
+    void _transmitImage( Image& image,
+                         const co::ObjectVersion& frameDataVersion,
                          const uint128_t& nodeID,
-                         const co::NodeID& netNodeID,
-                         const uint64_t imageIndex,
+                         const co::NodeID& remoteNodeID,
                          const uint32_t frameNumber,
                          const uint32_t taskID );
 
@@ -651,7 +651,7 @@ private:
     bool _cmdFrameTiles( co::ICommand& command );
     bool _cmdDeleteTransferContext( co::ICommand& command );
 
-    LB_TS_VAR( _pipeThread );
+    LB_TS_VAR( _pipeThread )
 };
 }
 

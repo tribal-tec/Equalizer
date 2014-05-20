@@ -509,74 +509,19 @@ void FrameData::removeListener( Listener& listener )
     _impl->listeners->erase( i );
 }
 
-bool FrameData::addImage( const co::ObjectVersion& frameDataVersion,
-                          const PixelViewport& pvp, const Zoom& zoom,
-                          const uint32_t buffers_, const bool useAlpha,
-                          uint8_t* data )
+void FrameData::addImage( co::DataIStream& is )
 {
-    LBASSERT( _impl->readyVersion < frameDataVersion.version.low( ));
-    if( _impl->readyVersion >= frameDataVersion.version.low( ))
-        return false;
-
     Image* image = _allocImage( Frame::TYPE_MEMORY, DrawableConfig(),
                                 false /* set quality */ );
 
-    image->setPixelViewport( pvp );
-    image->setAlphaUsage( useAlpha );
+    image->deserialize( is );
+    LBASSERT( image->getPixelViewport().isValid( ));
 
-    Frame::Buffer buffers[] = { Frame::BUFFER_COLOR, Frame::BUFFER_DEPTH };
-    for( unsigned i = 0; i < 2; ++i )
-    {
-        const Frame::Buffer buffer = buffers[i];
-
-        if( buffers_ & buffer )
-        {
-            PixelData pixelData;
-            const ImageHeader* header = reinterpret_cast<ImageHeader*>( data );
-            data += sizeof( ImageHeader );
-
-            pixelData.internalFormat  = header->internalFormat;
-            pixelData.externalFormat  = header->externalFormat;
-            pixelData.pixelSize       = header->pixelSize;
-            pixelData.pvp             = header->pvp;
-            pixelData.compressorFlags = header->compressorFlags;
-
-            const uint32_t compressor = header->compressorName;
-            if( compressor > EQ_COMPRESSOR_NONE )
-            {
-                lunchbox::CompressorChunks chunks;
-                const uint32_t nChunks = header->nChunks;
-                chunks.reserve( nChunks );
-
-                for( uint32_t j = 0; j < nChunks; ++j )
-                {
-                    const uint64_t size = *reinterpret_cast< uint64_t*>( data );
-                    data += sizeof( uint64_t );
-
-                    chunks.push_back( lunchbox::CompressorChunk( data, size ));
-                    data += size;
-                }
-                pixelData.compressedData =
-                    lunchbox::CompressorResult( compressor, chunks );
-            }
-            else
-            {
-                const uint64_t size = *reinterpret_cast< uint64_t*>( data );
-                data += sizeof( uint64_t );
-
-                pixelData.pixels = data;
-                data += size;
-                LBASSERT( size == pixelData.pvp.getArea()*pixelData.pixelSize );
-            }
-
-            image->setZoom( zoom );
-            image->setQuality( buffer, header->quality );
-            image->setPixelData( buffer, pixelData );
-        }
-    }
+    LBLOG( LOG_ASSEMBLY )
+        << "received image data for " << getVersion() /*<< ", buffers "
+        << buffers_*/ << " pvp " << image->getPixelViewport() << std::endl;
 
     _impl->pendingImages.push_back( image );
-    return true;
 }
 
 std::ostream& operator << ( std::ostream& os, const FrameData& data )

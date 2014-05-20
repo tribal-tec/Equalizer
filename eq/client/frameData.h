@@ -53,7 +53,6 @@ namespace detail { class FrameData; }
 class FrameData : public co::Object, public lunchbox::Referenced
 {
 public:
-    void assembleFrame( Frame* frame, Channel* channel );
     struct ImageHeader
     {
         uint32_t                internalFormat;
@@ -319,17 +318,14 @@ public:
     const Data& getData() const; //!< @internal
 
     /** @internal */
-    bool addImage( const co::ObjectVersion& frameDataVersion,
-                   const PixelViewport& pvp, const Zoom& zoom,
-                   const uint32_t buffers, const bool useAlpha,
-                   uint8_t* data );
+    void addImage( co::DataIStream& is );
     void setReady( const co::ObjectVersion& frameData,
                    const FrameData::Data& data ); //!< @internal
 
 protected:
-    virtual ChangeType getChangeType() const { return INSTANCE; }
-    virtual void getInstanceData( co::DataOStream& os );
-    virtual void applyInstanceData( co::DataIStream& is );
+    ChangeType getChangeType() const  override { return INSTANCE; }
+    void getInstanceData( co::DataOStream& os ) override;
+    void applyInstanceData( co::DataIStream& is ) override;
 
 private:
     detail::FrameData* const _impl;
@@ -345,7 +341,7 @@ private:
     /** Set a specific version ready. */
     void _setReady( const uint64_t version );
 
-    LB_TS_VAR( _commandThread );
+    LB_TS_VAR( _commandThread )
 };
 
 /** Print the frame data to the given output stream. @version 1.4 */
