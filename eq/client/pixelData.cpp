@@ -43,38 +43,27 @@ void PixelData::reset()
     internalFormat = EQ_COMPRESSOR_DATATYPE_NONE;
     externalFormat = EQ_COMPRESSOR_DATATYPE_NONE;
     pixelSize = 0;
+    pixels = 0;
     compressedData = lunchbox::CompressorResult();
+    compressorName = EQ_COMPRESSOR_INVALID;
     compressorFlags = 0;
-}
-
-void*& PixelData::pixels()
-{
-    LBASSERT( !compressedData.chunks.empty( ));
-    LBASSERT( compressedData.chunks.front().data );
-    return compressedData.chunks.front().data;
-}
-
-const void* PixelData::pixels() const
-{
-    if( compressedData.chunks.size() != 1 )
-        return 0;
-    LBASSERT( compressedData.chunks.front().data );
-    LBASSERT( compressedData.compressor == EQ_COMPRESSOR_NONE );
-    return compressedData.chunks.front().data;
-}
-
-void PixelData::setPixels( void* data, const size_t size )
-{
-    compressedData = lunchbox::CompressorResult( EQ_COMPRESSOR_AUTO,
-                                                 lunchbox::CompressorChunks( 1,
-                                                                             lunchbox::CompressorChunk( data, size )));
 }
 
 void PixelData::serialize( co::DataOStream& os ) const
 {
+    LBASSERT( compressorName != EQ_COMPRESSOR_INVALID );
+
     os << compressorFlags << externalFormat << internalFormat << pixelSize
-       << pvp << compressedData.compressor
-       << uint64_t(compressedData.chunks.size());
+       << pvp << compressorName << compressedData.compressor;
+
+    if( compressedData.compressor <= EQ_COMPRESSOR_NONE )
+    {
+        const uint64_t nBytes = pvp.getArea() * pixelSize;
+        os << co::Array< void >( pixels, nBytes );
+        return;
+    }
+
+    os << uint64_t( compressedData.chunks.size( ));
     BOOST_FOREACH( const lunchbox::CompressorChunk& chunk,
                    compressedData.chunks )
     {
@@ -85,9 +74,18 @@ void PixelData::serialize( co::DataOStream& os ) const
 
 void PixelData::deserialize( co::DataIStream& is )
 {
-    uint64_t nChunks = 0;
     is >> compressorFlags >> externalFormat >> internalFormat >> pixelSize
-       >> pvp >> compressedData.compressor >> nChunks;
+       >> pvp >> compressorName >> compressedData.compressor;
+
+    if( compressedData.compressor <= EQ_COMPRESSOR_NONE )
+    {
+        const uint64_t nBytes = pvp.getArea() * pixelSize;
+        pixels = const_cast< void* >( is.getRemainingBuffer( nBytes ));
+        return;
+    }
+
+    uint64_t nChunks = 0;
+    is >> nChunks;
 
     compressedData.chunks.clear();
     compressedData.chunks.reserve( nChunks );
@@ -95,9 +93,10 @@ void PixelData::deserialize( co::DataIStream& is )
     for( uint32_t i = 0; i < nChunks; ++i )
     {
         const uint64_t nBytes = is.read< uint64_t >();
+
         // works if stream is retained until setPixelData() in eq::Image...
         void* data = const_cast< void* >( is.getRemainingBuffer( nBytes ));
-        lunchbox::CompressorChunk chunk( data, nBytes );
+        const lunchbox::CompressorChunk chunk( data, nBytes );
         compressedData.chunks.push_back( chunk );
     }
 }

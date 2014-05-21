@@ -82,10 +82,7 @@ public:
         LBASSERT( pvp.hasArea( ));
 
         localBuffer.resize( pvp.getArea() * pixelSize );
-        compressedData =
-                lunchbox::CompressorResult( EQ_COMPRESSOR_NONE,
-                                            lunchbox::CompressorChunks( 1,
-                                                                        lunchbox::CompressorChunk( localBuffer.getData(), localBuffer.getSize( ))));
+        pixels = localBuffer.getData();
     }
 
     enum State
@@ -449,13 +446,13 @@ const util::Texture& Image::getTexture( const Frame::Buffer buffer ) const
 const uint8_t* Image::getPixelPointer( const Frame::Buffer buffer ) const
 {
     LBASSERT( hasPixelData( buffer ));
-    return reinterpret_cast< const uint8_t* >( _impl->getMemory( buffer ).pixels( ));
+    return reinterpret_cast< const uint8_t* >( _impl->getMemory( buffer ).pixels );
 }
 
 uint8_t* Image::getPixelPointer( const Frame::Buffer buffer )
 {
     LBASSERT( hasPixelData( buffer ));
-    return  reinterpret_cast< uint8_t* >( _impl->getMemory( buffer ).pixels( ));
+    return  reinterpret_cast< uint8_t* >( _impl->getMemory( buffer ).pixels );
 }
 
 const PixelData& Image::getPixelData( const Frame::Buffer buffer ) const
@@ -498,7 +495,7 @@ bool Image::upload( const Frame::Buffer buffer, util::Texture* texture,
     uint64_t inDims[4], outDims[4];
     pixelData.pvp.convertToPlugin( inDims );
     pvp.convertToPlugin( outDims );
-    uploader->upload( pixelData.pixels(), inDims, flags, outDims,
+    uploader->upload( pixelData.pixels, inDims, flags, outDims,
                       texture ? texture->getName() : 0, gl );
     return true;
 }
@@ -606,13 +603,12 @@ bool Image::startReadback( const Frame::Buffer buffer,
         flags |= EQ_COMPRESSOR_IGNORE_ALPHA;
 
     uint64_t outDims[4] = {0};
-    void* data;
     if( texture )
     {
         LBASSERT( texture->isValid( ));
         const uint64_t inDims[4] = { 0ull, uint64_t( texture->getWidth( )),
                                      0ull, uint64_t( texture->getHeight( )) };
-        if( downloader.start( &data, inDims, flags, outDims,
+        if( downloader.start( &memory.pixels, inDims, flags, outDims,
                               texture->getName(), gl ))
         {
             return true;
@@ -622,12 +618,11 @@ bool Image::startReadback( const Frame::Buffer buffer,
     {
         uint64_t inDims[4];
         _impl->pvp.convertToPlugin( inDims );
-        if( downloader.start( &data, inDims, flags, outDims, 0, gl ))
+        if( downloader.start( &memory.pixels, inDims, flags, outDims, 0, gl ))
             return true;
     }
 
     memory.pvp.convertFromPlugin( outDims );
-    memory.setPixels( data, memory.pvp.getArea() * memory.pixelSize );
     attachment.memory.state = Memory::VALID;
     return false;
 }
@@ -691,10 +686,8 @@ void Image::_finishReadback( const Frame::Buffer buffer,
     }
     _impl->pvp.convertToPlugin( inDims );
 
-    void* data;
-    downloader.finish( &data, inDims, flags, outDims, context );
+    downloader.finish( &memory.pixels, inDims, flags, outDims, context );
     memory.pvp.convertFromPlugin( outDims );
-    memory.setPixels( data, memory.pvp.getArea() * memory.pixelSize );
     memory.state = Memory::VALID;
 }
 
@@ -816,13 +809,13 @@ void Image::clearPixelData( const Frame::Buffer buffer )
     switch( memory.externalFormat )
     {
       case EQ_COMPRESSOR_DATATYPE_DEPTH_UNSIGNED_INT:
-        memset( memory.pixels(), 0xFF, size );
+        memset( memory.pixels, 0xFF, size );
         break;
 
       case EQ_COMPRESSOR_DATATYPE_RGBA:
       case EQ_COMPRESSOR_DATATYPE_BGRA:
       {
-        uint8_t* data = reinterpret_cast< uint8_t* >( memory.pixels() );
+        uint8_t* data = reinterpret_cast< uint8_t* >( memory.pixels );
 #ifdef Darwin
         const unsigned char pixel[4] = { 0, 0, 0, 255 };
         memset_pattern4( data, &pixel, size );
@@ -837,7 +830,7 @@ void Image::clearPixelData( const Frame::Buffer buffer )
       default:
         LBWARN << "Unknown external format " << memory.externalFormat
                << ", initializing to 0" << std::endl;
-        lunchbox::setZero( memory.pixels(), size );
+        lunchbox::setZero( memory.pixels, size );
         break;
     }
 }
@@ -847,7 +840,7 @@ void Image::validatePixelData( const Frame::Buffer buffer )
     Memory& memory = _impl->getAttachment( buffer ).memory;
     memory.useLocalBuffer();
     memory.state = Memory::VALID;
-    //memory.compressedData = lunchbox::CompressorResult();
+    memory.compressedData = lunchbox::CompressorResult();
 }
 
 void Image::setPixelData( const Frame::Buffer buffer, const PixelData& pixels )
@@ -858,7 +851,7 @@ void Image::setPixelData( const Frame::Buffer buffer, const PixelData& pixels )
     memory.pixelSize = pixels.pixelSize;
     memory.pvp       = pixels.pvp;
     memory.state     = Memory::INVALID;
-    //memory.compressedData = lunchbox::CompressorResult();
+    memory.compressedData = lunchbox::CompressorResult();
     memory.hasAlpha = false;
 
     const EqCompressorInfos& transferrers = _impl->findTransferers( buffer,
@@ -890,9 +883,9 @@ void Image::setPixelData( const Frame::Buffer buffer, const PixelData& pixels )
     {
         validatePixelData( buffer ); // alloc memory for pixels
 
-        if( pixels.pixels() )
+        if( pixels.pixels )
         {
-            memcpy( memory.pixels(), pixels.pixels(), size );
+            memcpy( memory.pixels, pixels.pixels, size );
             memory.state = Memory::VALID;
         }
         else
@@ -930,7 +923,7 @@ void Image::setPixelData( const Frame::Buffer buffer, const PixelData& pixels )
     uint64_t outDims[4];
     memory.pvp.convertToPlugin( outDims );
 
-    attachment.decompressor->decompress( pixels.compressedData, memory.pixels(),
+    attachment.decompressor->decompress( pixels.compressedData, memory.pixels,
                                          outDims, pixels.compressorFlags );
 }
 
@@ -941,7 +934,7 @@ bool Image::allocCompressor( const Frame::Buffer buffer, const uint32_t name )
     lunchbox::Compressor& compressor = attachment.compressor[attachment.active];
     if( name <= EQ_COMPRESSOR_NONE )
     {
-        attachment.memory.compressedData.compressor = EQ_COMPRESSOR_INVALID;
+        attachment.memory.compressedData = lunchbox::CompressorResult();
         compressor.clear();
         return true;
     }
@@ -949,7 +942,7 @@ bool Image::allocCompressor( const Frame::Buffer buffer, const uint32_t name )
     if( compressor.uses( name ))
         return true;
 
-    attachment.memory.compressedData.compressor = EQ_COMPRESSOR_INVALID;
+    attachment.memory.compressedData = lunchbox::CompressorResult();
     compressor.setup( co::Global::getPluginRegistry(), name );
     LBLOG( LOG_PLUGIN ) << "Instantiated compressor of type 0x" << std::hex
                         << name << std::dec << std::endl;
@@ -1037,7 +1030,7 @@ void Image::deserialize( co::DataIStream& is )
 
 void Image::useCompressor( const Frame::Buffer buffer, const uint32_t name )
 {
-    _impl->getMemory( buffer ).compressedData.compressor = name;
+    _impl->getMemory( buffer ).compressorName = name;
 }
 
 const PixelData& Image::compressPixelData( const Frame::Buffer buffer )
@@ -1047,9 +1040,9 @@ const PixelData& Image::compressPixelData( const Frame::Buffer buffer )
     Attachment& attachment = _impl->getAttachment( buffer );
     Memory& memory = attachment.memory;
     if( memory.compressedData.isCompressed() ||
-        memory.compressedData.compressor == EQ_COMPRESSOR_NONE )
+        memory.compressorName == EQ_COMPRESSOR_NONE )
     {
-        LBASSERT( memory.compressedData.compressor != EQ_COMPRESSOR_AUTO );
+        LBASSERT( memory.compressorName != EQ_COMPRESSOR_AUTO );
         return memory;
     }
 
@@ -1057,9 +1050,9 @@ const PixelData& Image::compressPixelData( const Frame::Buffer buffer )
 
     if( !compressor.isGood() ||
         compressor.getInfo().tokenType != getExternalFormat( buffer ) ||
-        memory.compressedData.compressor == EQ_COMPRESSOR_AUTO )
+        memory.compressorName == EQ_COMPRESSOR_AUTO )
     {
-        if( memory.compressedData.compressor == EQ_COMPRESSOR_AUTO )
+        if( memory.compressorName == EQ_COMPRESSOR_AUTO )
         {
             const uint32_t tokenType = getExternalFormat( buffer );
             const float downloadQuality =
@@ -1071,7 +1064,7 @@ const PixelData& Image::compressPixelData( const Frame::Buffer buffer )
         }
         else
             compressor.setup( co::Global::getPluginRegistry(),
-                              memory.compressedData.compressor );
+                              memory.compressorName );
 
         if( !compressor.isGood( ))
         {
@@ -1096,7 +1089,7 @@ const PixelData& Image::compressPixelData( const Frame::Buffer buffer )
 
     uint64_t inDims[4];
     memory.pvp.convertToPlugin( inDims );
-    compressor.compress( memory.pixels(), inDims, memory.compressorFlags );
+    compressor.compress( memory.pixels, inDims, memory.compressorFlags );
     memory.compressedData = compressor.getResult();
     return memory;
 }
@@ -1105,7 +1098,10 @@ void Image::compressPixelData()
 {
     Frame::Buffer buffers[] = { Frame::BUFFER_COLOR, Frame::BUFFER_DEPTH };
     for( unsigned i = 0; i < 2; ++i )
-        compressPixelData( buffers[i] );
+    {
+        if( hasPixelData( buffers[i] ))
+            compressPixelData( buffers[i] );
+    }
 }
 
 
@@ -1581,7 +1577,7 @@ bool Image::readImage( const std::string& filename, const Frame::Buffer buffer )
     }
     validatePixelData( buffer );
 
-    uint8_t* data = reinterpret_cast< uint8_t* >( memory.pixels() );
+    uint8_t* data = reinterpret_cast< uint8_t* >( memory.pixels );
     LBASSERTINFO( nBytes <= getPixelDataSize( buffer ),
                   nBytes << " > " << getPixelDataSize( buffer ));
     // Each channel is saved separately
