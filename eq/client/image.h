@@ -1,6 +1,6 @@
 
 /* Copyright (c) 2006-2014, Stefan Eilemann <eile@equalizergraphics.com>
- *                    2011, Daniel Nachbaur <danielnachbaur@gmail.com>
+ *               2011-2014, Daniel Nachbaur <danielnachbaur@gmail.com>
  *                    2010, Cedric Stalder <cedric.stalder@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -188,6 +188,7 @@ public:
     /** @return the pixel data, compressing it if needed. @version 1.0 */
     EQ_API const PixelData& compressPixelData( const Frame::Buffer );
 
+    /** Compress pixel data of all valid buffers. @version 1.7.3 */
     EQ_API void compressPixelData();
 
     /**

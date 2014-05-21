@@ -1370,8 +1370,16 @@ void Channel::_transmitImage( Image& image,
         image.compressPixelData();
 
         compressEvent.event.data.statistic.ratio = 1.0f; // TODO
-        compressEvent.event.data.statistic.plugins[0] = EQ_COMPRESSOR_NONE; // TODO
-        compressEvent.event.data.statistic.plugins[1] = EQ_COMPRESSOR_NONE; // TODO
+
+        if( image.hasPixelData( Frame::BUFFER_COLOR ))
+            compressEvent.event.data.statistic.plugins[0] = image.getPixelData( Frame::BUFFER_COLOR ).compressedData.compressor;
+        else
+            compressEvent.event.data.statistic.plugins[0] = EQ_COMPRESSOR_NONE;
+
+        if( image.hasPixelData( Frame::BUFFER_DEPTH ))
+            compressEvent.event.data.statistic.plugins[1] = image.getPixelData( Frame::BUFFER_DEPTH ).compressedData.compressor;
+        else
+            compressEvent.event.data.statistic.plugins[1] = EQ_COMPRESSOR_NONE;
     }
 
     image.serialize( command );
