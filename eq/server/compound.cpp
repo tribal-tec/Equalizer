@@ -212,6 +212,24 @@ void Compound::setChannel( Channel* channel )
     SwapBarrierPtr swapBarrier = segment->getSwapBarrier();
     if( swapBarrier )
         setSwapBarrier( swapBarrier );
+
+    if( !channel->getView()->getDisplayCluster().empty( ))
+    {
+        static size_t dcCount = 0;
+        std::ostringstream frameName;
+        frameName << "dcframe" << dcCount++;
+
+        Frame* outputFrame = new Frame;
+        outputFrame->setName( frameName.str( ));
+        //outputFrame->setBuffers( eq::Frame::BUFFER_COLOR );
+        //outputFrame->setType( Frame::TYPE_TEXTURE ); // OPT
+        addOutputFrame( outputFrame );
+
+//        Frame* inputFrame = new eq::server::Frame;
+//        inputFrame->setName( frameName.str( ));
+//        outputFrame->addInputFrame( inputFrame, this );
+        //_parent->unsetInheritTask( fabric::TASK_ASSEMBLE );
+    }
 }
 
 const Channel* Compound::getChannel() const

@@ -20,6 +20,7 @@
 #include "fileFrameWriter.h"
 
 #include <eq/fabric/drawableConfig.h>
+#include "../image.h"
 
 #ifdef EQUALIZER_USE_DISPLAYCLUSTER
 #  include "../dc/proxy.h"
@@ -61,7 +62,7 @@ public:
             LBASSERT( !fbo );
         }
 
-    void frameViewFinish( eq::Channel * channel )
+    void frameViewFinish( eq::Channel* channel )
     {
         if( !channel->getSAttribute(channel->SATTR_DUMP_IMAGE).empty( ))
             frameWriter.write( channel );
@@ -78,6 +79,13 @@ public:
                 _dcProxy->swapBuffer();
         }
     #endif
+    }
+
+    void transmitDCProxy( const eq::Image& image )
+    {
+        if( _dcProxy && _dcProxy->isRunning( ))
+            _dcProxy->transmit( (uint8_t*)image.getPixelData( eq::Frame::BUFFER_COLOR ).pixels,
+                                image.getPixelViewport( ));
     }
 
     /** The channel's drawable config (FBO). */

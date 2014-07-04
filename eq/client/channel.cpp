@@ -1309,6 +1309,14 @@ void Channel::_asyncTransmit( FrameDataPtr frame, const uint32_t frameNumber,
                 << co::ObjectVersion( frame ) << *i << *j << image
                 << frameNumber << taskID;
     }
+
+    //if( !getView()->getDisplayCluster().empty( ))
+    {
+        _refFrame( frameNumber );
+        send( getLocalNode(), fabric::CMD_CHANNEL_FRAME_TRANSMIT_IMAGE )
+                << co::ObjectVersion( frame ) << uint128_t() << co::NodeID() << image
+                << frameNumber << taskID;
+    }
 }
 
 void Channel::_transmitImage( const co::ObjectVersion& frameDataVersion,
@@ -1336,10 +1344,12 @@ void Channel::_transmitImage( const co::ObjectVersion& frameDataVersion,
     Image* image = images[ imageIndex ];
     LBASSERT( images.size() > imageIndex );
 
-    if( image->getStorageType() == Frame::TYPE_TEXTURE )
+    if( true )//!getView()->getDisplayCluster().empty( ) )
     {
-        LBWARN << "Can't transmit image of type TEXTURE" << std::endl;
-        LBUNIMPLEMENTED;
+        //LBWARN << "Can't transmit image of type TEXTURE" << std::endl;
+        //LBUNIMPLEMENTED;
+
+        _impl->transmitDCProxy( *image );
         return;
     }
 

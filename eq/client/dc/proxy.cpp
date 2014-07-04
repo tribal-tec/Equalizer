@@ -112,16 +112,23 @@ public:
         if( !_fboDownload( ))
             _textureDownload();
 
+        transmit( buffer.getData(), _channel->getPixelViewport( ));
+    }
+
+    void transmit( uint8_t* data, const PixelViewport& pvp )
+    {
+        const size_t bytesPerPixel = 4;
+
         const Viewport& vp = _channel->getViewport();
         const int32_t width = pvp.w / vp.w;
         const int32_t height = pvp.h / vp.h;
         const int32_t offsX = vp.x * width;
         const int32_t offsY = height - (vp.y * height + vp.h * height);
 
-        ::dc::ImageWrapper::swapYAxis( buffer.getData(), pvp.w, pvp.h,
+        ::dc::ImageWrapper::swapYAxis( data, pvp.w, pvp.h,
                                        bytesPerPixel );
-        ::dc::ImageWrapper imageWrapper( buffer.getData(), pvp.w, pvp.h,
-                                         ::dc::RGBA, offsX, offsY );
+        ::dc::ImageWrapper imageWrapper( data, pvp.w, pvp.h,
+                                         ::dc::BGRA, offsX, offsY );
         imageWrapper.compressionPolicy = ::dc::COMPRESSION_ON;
         imageWrapper.compressionQuality = 100;
 
@@ -180,13 +187,18 @@ Proxy::~Proxy()
 
 void Proxy::swapBuffer()
 {
-    _impl->swapBuffer();
+    //_impl->swapBuffer();
 
-    if( !_impl->_eventHandler && _impl->_stream->registerForEvents( true ))
-    {
-        _impl->_eventHandler = new EventHandler( this );
-        LBINFO << "Installed event handler for DisplayCluster" << std::endl;
-    }
+//    if( !_impl->_eventHandler && _impl->_stream->registerForEvents( true ))
+//    {
+//        _impl->_eventHandler = new EventHandler( this );
+//        LBINFO << "Installed event handler for DisplayCluster" << std::endl;
+//    }
+}
+
+void Proxy::transmit( uint8_t* data, const PixelViewport& pvp )
+{
+    _impl->transmit( data, pvp );
 }
 
 Channel* Proxy::getChannel()

@@ -65,6 +65,8 @@ public:
     /** @return the latest window Event. @sa hasNewEvent() */
     ::dc::Event getEvent() const;
 
+    void transmit( uint8_t* data, const PixelViewport& pvp );
+
 private:
     detail::Proxy* const _impl;
 };
