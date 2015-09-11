@@ -173,6 +173,7 @@ void Window::_updateFPS()
 
 void Window::drawFPS()
 {
+#ifndef Darwin
     std::ostringstream fpsText;
     fpsText << std::setprecision(3) << getFPS() << " FPS";
 
@@ -185,6 +186,7 @@ void Window::drawFPS()
     glColor3f( .8f, .8f, .8f );
 
     font->draw( fpsText.str( ));
+#endif
 }
 
 co::CommandQueue* Window::getPipeThreadQueue()
@@ -477,12 +479,14 @@ bool Window::configInitGL( const uint128_t& )
                 WindowSettings::IATTR_HINT_CORE_PROFILE ) == ON;
     if( !coreProfile )
     {
+#ifndef Darwin
         EQ_GL_CALL( glEnable( GL_LIGHTING ));
         EQ_GL_CALL( glEnable( GL_LIGHT0 ));
 
         EQ_GL_CALL( glColorMaterial( GL_FRONT_AND_BACK,
                                      GL_AMBIENT_AND_DIFFUSE ));
         EQ_GL_CALL( glEnable( GL_COLOR_MATERIAL ));
+#endif
     }
 
     EQ_GL_CALL( glEnable( GL_SCISSOR_TEST )); // to constrain channel viewport

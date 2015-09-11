@@ -334,6 +334,7 @@ void Channel::frameDraw( const uint128_t& )
     if( coreProfile )
         return;
 
+#ifndef Darwin
     EQ_GL_CALL( glMatrixMode( GL_PROJECTION ));
     EQ_GL_CALL( glLoadIdentity( ));
     EQ_GL_CALL( applyFrustum( ));
@@ -341,6 +342,7 @@ void Channel::frameDraw( const uint128_t& )
     EQ_GL_CALL( glMatrixMode( GL_MODELVIEW ));
     EQ_GL_CALL( glLoadIdentity( ));
     EQ_GL_CALL( applyHeadTransform( ));
+#endif
 }
 
 void Channel::frameAssemble( const uint128_t&, const Frames& frames )
@@ -594,13 +596,16 @@ void Channel::applyPerspective() const
     const Vector2f jitter = getJitter();
 
     frustum.apply_jitter( jitter );
+#ifndef Darwin
     EQ_GL_CALL( glFrustum( frustum.left(), frustum.right(),
                            frustum.bottom(), frustum.top(),
                            frustum.near_plane(), frustum.far_plane() ));
+#endif
 }
 
 void Channel::applyOrtho() const
 {
+#ifndef Darwin
     LB_TS_THREAD( _pipeThread );
     Frustumf ortho = getOrtho();
     const Vector2f jitter = getJitter();
@@ -608,16 +613,19 @@ void Channel::applyOrtho() const
     ortho.apply_jitter( jitter );
     EQ_GL_CALL( glOrtho( ortho.left(), ortho.right(),
                          ortho.bottom(), ortho.top(),
-                         ortho.near_plane(), ortho.far_plane() ));
+                         ortho.near_plane(), ortho.far_plane( )));
+#endif
 }
 
 void Channel::applyScreenFrustum() const
 {
+#ifndef Darwin
     LB_TS_THREAD( _pipeThread );
     const Frustumf frustum = getScreenFrustum();
     EQ_GL_CALL( glOrtho( frustum.left(), frustum.right(),
                          frustum.bottom(), frustum.top(),
-                         frustum.near_plane(), frustum.far_plane() ));
+                         frustum.near_plane(), frustum.far_plane( )));
+#endif
 }
 
 void Channel::applyHeadTransform() const
@@ -631,16 +639,20 @@ void Channel::applyHeadTransform() const
 
 void Channel::applyPerspectiveTransform() const
 {
+#ifndef Darwin
     LB_TS_THREAD( _pipeThread );
     const Matrix4f& xfm = getPerspectiveTransform();
     EQ_GL_CALL( glMultMatrixf( xfm.array ));
+#endif
 }
 
 void Channel::applyOrthoTransform() const
 {
+#ifndef Darwin
     LB_TS_THREAD( _pipeThread );
     const Matrix4f& xfm = getOrthoTransform();
     EQ_GL_CALL( glMultMatrixf( xfm.array ));
+#endif
 }
 
 namespace
@@ -880,6 +892,7 @@ void Channel::drawStatistics()
     if( !pvp.hasArea() || coreProfile )
         return;
 
+#ifndef Darwin
     //----- setup
     EQ_GL_CALL( applyBuffer( ));
     EQ_GL_CALL( applyViewport( ));
@@ -912,6 +925,7 @@ void Channel::drawStatistics()
     EQ_GL_CALL( glColor3f( 1.f, 1.f, 1.f ));
     window->drawFPS();
     EQ_GL_CALL( resetAssemblyState( ));
+#endif
 }
 
 void Channel::outlineViewport()
@@ -921,6 +935,7 @@ void Channel::outlineViewport()
     if( coreProfile )
         return;
 
+#ifndef Darwin
     setupAssemblyState();
     glDisable( GL_LIGHTING );
 
@@ -943,6 +958,7 @@ void Channel::outlineViewport()
     } glEnd();
 
     resetAssemblyState();
+#endif
 }
 
 namespace detail

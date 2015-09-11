@@ -63,12 +63,12 @@ namespace detail
 class ObjectManager : public lunchbox::Referenced
 {
 public:
-    explicit ObjectManager( const GLEWContext* gl )
+    explicit ObjectManager( const GLEWContext* /*gl*/ )
     {
-        if( gl )
-            memcpy( &glewContext, gl, sizeof( GLEWContext ));
-        else
-            lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
+        //if( gl )
+        //    memcpy( &glewContext, gl, sizeof( GLEWContext ));
+        //else
+        //    lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
     }
 
     virtual ~ObjectManager()
@@ -144,7 +144,7 @@ public:
     }
 
 
-    GLEWContext glewContext;
+    //GLEWContext glewContext;
     ObjectHash lists;
     ObjectHash vertexArrays;
     ObjectHash textures;
@@ -200,7 +200,7 @@ bool ObjectManager::isShared() const
 
 const GLEWContext* ObjectManager::glewGetContext() const
 {
-    return &_impl->glewContext;
+    return 0;
 }
 
 void ObjectManager::deleteAll()
@@ -210,7 +210,7 @@ void ObjectManager::deleteAll()
     {
         const Object& object = i->second;
         LBVERB << "Delete list " << object.id << std::endl;
-        EQ_GL_CALL( glDeleteLists( object.id, object.num ));
+        //EQ_GL_CALL( glDeleteLists( object.id, object.num ));
     }
     _impl->lists.clear();
 
@@ -316,7 +316,8 @@ GLuint ObjectManager::newList( const void* key, const GLsizei num )
         return INVALID;
     }
 
-    const GLuint id = glGenLists( num );
+//    const GLuint id = glGenLists( num );
+    const GLuint id = 0;
     if( !id )
     {
         LBWARN << "glGenLists failed: " << glGetError() << std::endl;
@@ -344,8 +345,8 @@ void ObjectManager::deleteList( const void* key )
     if( i == _impl->lists.end( ))
         return;
 
-    const Object& object = i->second;
-    EQ_GL_CALL( glDeleteLists( object.id, object.num ));
+//    const Object& object = i->second;
+//    EQ_GL_CALL( glDeleteLists( object.id, object.num ));
     _impl->lists.erase( i );
 }
 
@@ -457,7 +458,7 @@ void ObjectManager::deleteTexture( const void* key )
 
 bool ObjectManager::supportsBuffers() const
 {
-    return ( GLEW_VERSION_1_5 );
+    return true;
 }
 
 GLuint ObjectManager::getBuffer( const void* key ) const
@@ -472,11 +473,11 @@ GLuint ObjectManager::getBuffer( const void* key ) const
 
 GLuint ObjectManager::newBuffer( const void* key )
 {
-    if( !GLEW_VERSION_1_5 )
-    {
-        LBWARN << "glGenBuffers not available" << std::endl;
-        return INVALID;
-    }
+//    if( !GLEW_VERSION_1_5 )
+//    {
+//        LBWARN << "glGenBuffers not available" << std::endl;
+//        return INVALID;
+//    }
 
     if( _impl->buffers.find( key ) != _impl->buffers.end() )
     {
@@ -520,7 +521,7 @@ void ObjectManager::deleteBuffer( const void* key )
 
 bool ObjectManager::supportsPrograms() const
 {
-    return ( GLEW_VERSION_2_0 );
+    return true;
 }
 
 GLuint ObjectManager::getProgram( const void* key ) const
@@ -535,11 +536,11 @@ GLuint ObjectManager::getProgram( const void* key ) const
 
 GLuint ObjectManager::newProgram( const void* key )
 {
-    if( !GLEW_VERSION_2_0 )
-    {
-        LBWARN << "glCreateProgram not available" << std::endl;
-        return INVALID;
-    }
+//    if( !GLEW_VERSION_2_0 )
+//    {
+//        LBWARN << "glCreateProgram not available" << std::endl;
+//       return INVALID;
+//    }
 
     if( _impl->programs.find( key ) != _impl->programs.end() )
     {
@@ -582,7 +583,7 @@ void ObjectManager::deleteProgram( const void* key )
 
 bool ObjectManager::supportsShaders() const
 {
-    return ( GLEW_VERSION_2_0 );
+    return true;
 }
 
 GLuint ObjectManager::getShader( const void* key ) const
@@ -597,11 +598,11 @@ GLuint ObjectManager::getShader( const void* key ) const
 
 GLuint ObjectManager::newShader( const void* key, const GLenum type )
 {
-    if( !GLEW_VERSION_2_0 )
-    {
-        LBWARN << "glCreateShader not available" << std::endl;
-        return INVALID;
-    }
+//    if( !GLEW_VERSION_2_0 )
+//    {
+//        LBWARN << "glCreateShader not available" << std::endl;
+//        return INVALID;
+//    }
 
     if( _impl->shaders.find( key ) != _impl->shaders.end() )
     {
@@ -657,7 +658,7 @@ Accum* ObjectManager::newEqAccum( const void* key )
         return 0;
     }
 
-    Accum* accum = new Accum( &_impl->glewContext );
+    Accum* accum = new Accum( 0 );
     _impl->accums[ key ] = accum;
     return accum;
 }
@@ -738,7 +739,7 @@ void ObjectManager::deleteEqUploader( const void* key )
 // eq::Texture object functions
 bool ObjectManager::supportsEqTexture() const
 {
-    return (GLEW_ARB_texture_rectangle);
+    return 0;
 }
 
 Texture* ObjectManager::getEqTexture( const void* key ) const
@@ -758,7 +759,7 @@ Texture* ObjectManager::newEqTexture( const void* key, const GLenum target )
         return 0;
     }
 
-    Texture* texture = new Texture( target, &_impl->glewContext );
+    Texture* texture = new Texture( target, 0 );
     _impl->eqTextures[ key ] = texture;
     return texture;
 }
@@ -831,7 +832,7 @@ void ObjectManager::deleteEqBitmapFont( const void* key )
 // eq::FrameBufferObject object functions
 bool ObjectManager::supportsEqFrameBufferObject() const
 {
-    return (GLEW_EXT_framebuffer_object);
+    return true;
 }
 
 FrameBufferObject* ObjectManager::getEqFrameBufferObject( const void* key )
@@ -855,7 +856,7 @@ FrameBufferObject* ObjectManager::newEqFrameBufferObject( const void* key )
     }
 
     FrameBufferObject* frameBufferObject =
-                                    new FrameBufferObject( &_impl->glewContext );
+                                    new FrameBufferObject( 0 );
     _impl->eqFrameBufferObjects[ key ] = frameBufferObject;
     return frameBufferObject;
 }
@@ -884,7 +885,7 @@ void ObjectManager::deleteEqFrameBufferObject( const void* key )
 // eq::PixelBufferObject object functions
 bool ObjectManager::supportsEqPixelBufferObject() const
 {
-    return (GLEW_ARB_pixel_buffer_object);
+    return true;
 }
 
 PixelBufferObject* ObjectManager::getEqPixelBufferObject( const void* key )
@@ -909,7 +910,7 @@ PixelBufferObject* ObjectManager::newEqPixelBufferObject( const void* key,
     }
 
     PixelBufferObject* pixelBufferObject =
-        new PixelBufferObject( &_impl->glewContext, threadSafe );
+        new PixelBufferObject( 0, threadSafe );
     _impl->eqPixelBufferObjects[ key ] = pixelBufferObject;
     return pixelBufferObject;
 }

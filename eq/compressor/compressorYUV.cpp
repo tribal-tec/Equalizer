@@ -86,12 +86,19 @@ CompressorYUV::~CompressorYUV( )
     _texture = 0;
 }
 
+#ifdef Darwin
+bool CompressorYUV::isCompatible( const GLEWContext* )
+{
+    return true;
+}
+#else
 bool CompressorYUV::isCompatible( const GLEWContext* glewContext )
 {
     return ( GLEW_ARB_texture_non_power_of_two &&
              GLEW_VERSION_2_0 &&
              GLEW_EXT_framebuffer_object );
 }
+#endif
 
 void CompressorYUV::_initShader( const GLEWContext* glewContext LB_UNUSED,
                                  const char* fShaderPtr )
@@ -134,7 +141,7 @@ void CompressorYUV::_compress( const GLEWContext* glewContext,
 {
     /* save the current FBO ID for bind it at the end of the compression */
     GLint oldFBO = 0;
-    glGetIntegerv( GL_FRAMEBUFFER_BINDING_EXT, &oldFBO );
+    glGetIntegerv( GL_FRAMEBUFFER_BINDING, &oldFBO );
 
     if ( _fbo )
     {
@@ -149,6 +156,7 @@ void CompressorYUV::_compress( const GLEWContext* glewContext,
 
     _texture->bind();
 
+#ifndef Darwin
     glDisable( GL_LIGHTING );
     glEnable( GL_TEXTURE_RECTANGLE_ARB );
 
@@ -173,8 +181,9 @@ void CompressorYUV::_compress( const GLEWContext* glewContext,
     glDisable( GL_TEXTURE_RECTANGLE_ARB );
     EQ_GL_CALL( glUseProgram( 0 ));
 
+#endif
     /* apply the initial fbo */
-    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, oldFBO ));
+    EQ_GL_CALL( glBindFramebuffer( GL_FRAMEBUFFER, oldFBO ));
 }
 
 void CompressorYUV::_download( void* data )
@@ -192,8 +201,10 @@ void CompressorYUV::download( const GLEWContext* glewContext,
                                     eq_uint64_t  outDims[4],
                               void**             out )
 {
+#ifndef Darwin
     glPushAttrib( GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT |
                   GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT );
+#endif
     glColorMask( true, true, true, true );
     outDims[0] = inDims[0];
     outDims[1] = (inDims[1] + 1) / 2;
@@ -236,11 +247,13 @@ void CompressorYUV::download( const GLEWContext* glewContext,
         LBUNIMPLEMENTED;
     }
     out[0] = buffer.getData();
+#ifndef Darwin
     glPopAttrib();
+#endif
 }
 
 void CompressorYUV::_decompress( const GLEWContext* glewContext,
-                                 const eq_uint64_t inDims[4] )
+                                 const eq_uint64_t* /*inDims[4]*/ )
 {
     glDepthMask( false );
     _initShader( glewContext, yuv420unpack_glsl.c_str() );
@@ -248,6 +261,7 @@ void CompressorYUV::_decompress( const GLEWContext* glewContext,
     const GLint colorParam = glGetUniformLocation( _program, "color" );
     glUniform1i( colorParam, 0 );
 
+#ifndef Darwin
     glDisable( GL_LIGHTING );
     glEnable( GL_TEXTURE_RECTANGLE_ARB );
 
@@ -275,6 +289,7 @@ void CompressorYUV::_decompress( const GLEWContext* glewContext,
     glDisable( GL_TEXTURE_RECTANGLE_ARB );
     EQ_GL_CALL( glUseProgram( 0 ));
     glDepthMask( true );
+#endif
 }
 
 void CompressorYUV::upload( const GLEWContext* glewContext,
@@ -284,8 +299,10 @@ void CompressorYUV::upload( const GLEWContext* glewContext,
                             const eq_uint64_t  outDims[4],
                             const unsigned     destination )
 {
+#ifndef Darwin
     glPushAttrib( GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_TEXTURE_BIT |
                   GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LIGHTING_BIT );
+#endif
     if ( !_texture )
     {
         _texture = new util::Texture( GL_TEXTURE_RECTANGLE_ARB, glewContext );
@@ -301,7 +318,7 @@ void CompressorYUV::upload( const GLEWContext* glewContext,
     {
         /* save the current FBO ID for bind it at the end of the compression */
         GLint oldFBO = 0;
-        glGetIntegerv( GL_FRAMEBUFFER_BINDING_EXT, &oldFBO );
+        glGetIntegerv( GL_FRAMEBUFFER_BINDING, &oldFBO );
 
         if ( !_fbo )
             _fbo = new util::FrameBufferObject( glewContext );
@@ -323,7 +340,7 @@ void CompressorYUV::upload( const GLEWContext* glewContext,
         _decompress( glewContext, outDims );
 
         /* apply the initial fbo */
-        EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, oldFBO ));
+        EQ_GL_CALL( glBindFramebuffer( GL_FRAMEBUFFER, oldFBO ));
 
         texture->flushNoDelete();
     }
@@ -331,7 +348,9 @@ void CompressorYUV::upload( const GLEWContext* glewContext,
     {
         LBASSERT( 0 );
     }
+#ifndef Darwin
     glPopAttrib();
+#endif
 }
 
 }

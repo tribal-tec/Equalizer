@@ -59,8 +59,8 @@ public:
     {
         LBASSERT( _glewContext );
 
-        if( !GLEW_ARB_pixel_buffer_object )
-            return Error( ERROR_PBO_UNSUPPORTED );
+//        if( !GL_ARB_pixel_buffer_object )
+//            return Error( ERROR_PBO_UNSUPPORTED );
 
         if( newSize == 0 )
         {
@@ -70,7 +70,7 @@ public:
 
         if( pboID == 0 )
         {
-            EQ_GL_CALL( glGenBuffersARB( 1, &pboID ));
+            EQ_GL_CALL( glGenBuffers( 1, &pboID ));
         }
         if( pboID == 0 )
             return Error( ERROR_PBO_NOT_INITIALIZED );
@@ -87,16 +87,16 @@ public:
 
         switch( type )
         {
-        case GL_READ_ONLY_ARB:
+        case GL_READ_ONLY:
             EQ_GL_CALL(
-                glBufferDataARB( GL_PIXEL_PACK_BUFFER_ARB, newSize, 0,
-                                 GL_STREAM_READ_ARB ));
+                glBufferData( GL_PIXEL_PACK_BUFFER, newSize, 0,
+                                 GL_STREAM_READ ));
             return Error( ERROR_NONE );
 
-        case GL_WRITE_ONLY_ARB:
+        case GL_WRITE_ONLY:
             EQ_GL_CALL(
-                glBufferDataARB( GL_PIXEL_UNPACK_BUFFER_ARB, newSize, 0,
-                                 GL_STREAM_DRAW_ARB ));
+                glBufferData( GL_PIXEL_UNPACK_BUFFER, newSize, 0,
+                                 GL_STREAM_DRAW ));
             return Error( ERROR_NONE );
 
         default:
@@ -110,7 +110,7 @@ public:
         if( pboID != 0 )
         {
             unbind();
-            EQ_GL_CALL( glDeleteBuffersARB( 1, &pboID ));
+            EQ_GL_CALL( glDeleteBuffers( 1, &pboID ));
         }
         pboID = 0;
         size = 0;
@@ -119,28 +119,28 @@ public:
 
     const void* mapRead() const
     {
-        if( !isInitialized() || _type != GL_READ_ONLY_ARB )
+        if( !isInitialized() || _type != GL_READ_ONLY )
             return 0;
 
         bind();
-        return glMapBufferARB( _getName(), GL_READ_ONLY_ARB );
+        return glMapBuffer( _getName(), GL_READ_ONLY );
     }
 
     void* mapWrite()
     {
-        if( !isInitialized() || _type != GL_WRITE_ONLY_ARB )
+        if( !isInitialized() || _type != GL_WRITE_ONLY )
             return 0;
 
         bind();
         // cancel all draw operations on this buffer to prevent stalling
-        EQ_GL_CALL( glBufferDataARB( _getName(), size, 0, GL_STREAM_DRAW_ARB ));
-        return glMapBufferARB( _getName(), GL_WRITE_ONLY_ARB );
+        EQ_GL_CALL( glBufferData( _getName(), size, 0, GL_STREAM_DRAW ));
+        return glMapBuffer( _getName(), GL_WRITE_ONLY );
     }
 
     void unmap() const
     {
         LBASSERT( isInitialized( ));
-        EQ_GL_CALL( glUnmapBufferARB( _getName( )));
+        EQ_GL_CALL( glUnmapBuffer( _getName( )));
         unbind();
     }
 
@@ -149,14 +149,14 @@ public:
         if( !isInitialized( ))
             return false;
 
-        EQ_GL_CALL( glBindBufferARB( _getName(), pboID ));
+        EQ_GL_CALL( glBindBuffer( _getName(), pboID ));
         return true;
     }
 
     void unbind() const
     {
         LBASSERT( isInitialized( ));
-        EQ_GL_CALL( glBindBufferARB( _getName(), 0 ));
+        EQ_GL_CALL( glBindBuffer( _getName(), 0 ));
     }
 
     void lock()   const { if( lock_ ) lock_->set();   }
@@ -168,12 +168,12 @@ public:
 
 private:
     const GLEWContext* const _glewContext;
-    GLuint _type; //!< GL_READ_ONLY_ARB or GL_WRITE_ONLY_ARB
+    GLuint _type; //!< GL_READ_ONLY or GL_WRITE_ONLY
 
     GLuint _getName() const
     {
-        return _type == GL_READ_ONLY_ARB ? GL_PIXEL_PACK_BUFFER_ARB :
-                                           GL_PIXEL_UNPACK_BUFFER_ARB;
+        return _type == GL_READ_ONLY ? GL_PIXEL_PACK_BUFFER :
+                                       GL_PIXEL_UNPACK_BUFFER;
     }
 };
 }

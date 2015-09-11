@@ -279,7 +279,7 @@ uint32_t Compositor::assembleFramesSorted( const Frames& frames,
     if( blendAlpha )
     {
         glEnable( GL_BLEND );
-        LBASSERT( GLEW_EXT_blend_func_separate );
+        //LBASSERT( GLEW_EXT_blend_func_separate );
         glBlendFuncSeparate( GL_ONE, GL_SRC_ALPHA, GL_ZERO, GL_SRC_ALPHA );
     }
 
@@ -942,7 +942,7 @@ void Compositor::assembleFrame( const Frame* frame, Channel* channel )
     }
 }
 
-void Compositor::assembleImage( const Image* image, const ImageOp& op )
+void Compositor::assembleImage( const Image* /*image*/, const ImageOp& op )
 {
     const bool coreProfile = op.channel->getWindow()->getIAttribute(
                 WindowSettings::IATTR_HINT_CORE_PROFILE ) == ON;
@@ -953,6 +953,7 @@ void Compositor::assembleImage( const Image* image, const ImageOp& op )
         return;
     }
 
+#ifndef Darwin
     ImageOp operation = op;
     operation.buffers = Frame::BUFFER_NONE;
 
@@ -984,8 +985,10 @@ void Compositor::assembleImage( const Image* image, const ImageOp& op )
                << operation.buffers << std::endl;
 
     clearStencilBuffer( operation );
+#endif
 }
 
+#ifndef Darwin
 void Compositor::setupStencilBuffer( const Image* image, const ImageOp& op )
 {
     if( op.pixel == Pixel::ALL )
@@ -1068,16 +1071,18 @@ void Compositor::clearStencilBuffer( const ImageOp& op )
     EQ_GL_CALL( glPixelZoom( 1.f, 1.f ));
     EQ_GL_CALL( glDisable( GL_STENCIL_TEST ));
 }
-
+#endif
 void Compositor::assembleImage2D( const Image* image, const ImageOp& op )
 {
     // cppcheck-suppress unreadVariable
-    Channel* channel = op.channel;
+    //Channel* channel = op.channel;
 
-    if( GLEW_VERSION_3_3 )
+    if( GL_VERSION_3_3 )
         _drawPixelsGLSL( image, op, Frame::BUFFER_COLOR );
     else
+#ifndef Darwin
         _drawPixelsFF( image, op, Frame::BUFFER_COLOR );
+#endif
     declareRegion( image, op );
 #if 0
     static lunchbox::a_int32_t counter;
@@ -1087,6 +1092,7 @@ void Compositor::assembleImage2D( const Image* image, const ImageOp& op )
 #endif
 }
 
+#ifndef Darwin
 void Compositor::_drawPixelsFF( const Image* image, const ImageOp& op,
                                 const Frame::Buffer which )
 {
@@ -1130,6 +1136,7 @@ void Compositor::_drawPixelsFF( const Image* image, const ImageOp& op,
                                  true ));
     }
 }
+#endif
 
 void Compositor::_drawPixelsGLSL( const Image* image, const ImageOp& op,
                                   const Frame::Buffer which )
@@ -1337,14 +1344,17 @@ void Compositor::_drawTexturedQuad( const T* key, const ImageOp& op,
 void Compositor::assembleImageDB( const Image* image, const ImageOp& op )
 {
     // cppcheck-suppress unreadVariable
-    Channel* channel = op.channel;
+    //Channel* channel = op.channel;
 
-    if( GLEW_VERSION_3_3 )
+    if( GL_VERSION_3_3 )
         assembleImageDB_GLSL( image, op );
+#ifndef Darwin
     else
         assembleImageDB_FF( image, op );
+#endif
 }
 
+#ifndef Darwin
 void Compositor::assembleImageDB_FF( const Image* image, const ImageOp& op )
 {
     const PixelViewport& pvp = image->getPixelViewport();
@@ -1384,6 +1394,7 @@ void Compositor::assembleImageDB_FF( const Image* image, const ImageOp& op )
     EQ_GL_CALL( glDisable( GL_STENCIL_TEST ));
     declareRegion( image, op );
 }
+#endif
 
 void Compositor::assembleImageDB_GLSL( const Image* image, const ImageOp& op )
 {
@@ -1441,9 +1452,10 @@ void Compositor::declareRegion( const Image* image, const ImageOp& op )
 #undef glewGetContext
 #define glewGetContext() glCtx
 
-void Compositor::setupAssemblyState( const PixelViewport& pvp,
-                                     const GLEWContext* glCtx )
+void Compositor::setupAssemblyState( const PixelViewport& /*pvp*/,
+                                     const GLEWContext* /*glCtx*/ )
 {
+#ifndef Darwin
     EQ_GL_ERROR( "before setupAssemblyState" );
     glPushAttrib( GL_ENABLE_BIT | GL_STENCIL_BUFFER_BIT | GL_LINE_BIT |
         GL_PIXEL_MODE_BIT | GL_POLYGON_BIT | GL_TEXTURE_BIT );
@@ -1482,10 +1494,12 @@ void Compositor::setupAssemblyState( const PixelViewport& pvp,
     glPushMatrix();
     glLoadIdentity();
     EQ_GL_ERROR( "after  setupAssemblyState" );
+#endif
 }
 
 void Compositor::resetAssemblyState()
 {
+#ifndef Darwin
     EQ_GL_CALL( glMatrixMode( GL_TEXTURE ) );
     EQ_GL_CALL( glPopMatrix() );
     EQ_GL_CALL( glMatrixMode( GL_PROJECTION ) );
@@ -1493,6 +1507,7 @@ void Compositor::resetAssemblyState()
     EQ_GL_CALL( glMatrixMode( GL_MODELVIEW ));
     EQ_GL_CALL( glPopMatrix());
     EQ_GL_CALL( glPopAttrib());
+#endif
 }
 
 }

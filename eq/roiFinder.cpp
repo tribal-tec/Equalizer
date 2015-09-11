@@ -576,6 +576,7 @@ void ROIFinder::_readbackInfo( util::ObjectManager& glObjects )
         EQ_GL_CALL( glUseProgram( program ));
     }
 
+#ifndef Darwin
     // Draw Quad
     glDisable( GL_LIGHTING );
     glColor3f( 1.0f, 1.0f, 1.0f );
@@ -586,6 +587,7 @@ void ROIFinder::_readbackInfo( util::ObjectManager& glObjects )
         glVertex3i( _pvp.w, _pvp.h, 0 );
         glVertex3i(      0, _pvp.h, 0 );
     glEnd();
+#endif
 
     // restore state
     glDisable( GL_TEXTURE_RECTANGLE_ARB );

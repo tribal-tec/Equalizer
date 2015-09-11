@@ -30,6 +30,10 @@
  * rendering spinning quads around the origin.
  */
 
+#ifdef EQUALIZER_USE_QT5WIDGETS
+#  include <QApplication>
+#endif
+
 #include <seq/sequel.h>
 #include <stdlib.h>
 
@@ -84,12 +88,21 @@ public:
 typedef lunchbox::RefPtr< Application > ApplicationPtr;
 }
 
-int main( const int argc, char** argv )
+int main( int argc, char** argv )
 {
+#ifdef EQUALIZER_USE_QT5WIDGETS
+    QApplication* qtapp = new QApplication( argc, argv );
+#endif
+
     eqHello::ApplicationPtr app = new eqHello::Application;
 
     if( app->init( argc, argv, 0 ) && app->run( 0 ) && app->exit( ))
+    {
+#ifdef EQUALIZER_USE_QT5WIDGETS
+        delete qtapp;
+#endif
         return EXIT_SUCCESS;
+    }
 
     return EXIT_FAILURE;
 }

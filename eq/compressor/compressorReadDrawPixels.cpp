@@ -426,6 +426,7 @@ void CompressorReadDrawPixels::upload( const GLEWContext* glewContext,
 {
     _initUnpackAlignment( inDims[1] );
 
+#ifndef Darwin
     if( flags & EQ_COMPRESSOR_USE_FRAMEBUFFER )
     {
         EQ_GL_CALL( glRasterPos2i( outDims[0], outDims[2] ));
@@ -433,6 +434,7 @@ void CompressorReadDrawPixels::upload( const GLEWContext* glewContext,
                     buffer ));
     }
     else
+#endif
     {
         LBASSERT( outDims[0] == 0 && outDims[2]==0 ); // Implement me
         _initTexture( glewContext, flags );
@@ -451,7 +453,7 @@ bool CompressorReadDrawPixels::_initPBO( const GLEWContext* glewContext,
     if( !_pbo )
         _pbo = new util::PixelBufferObject( glewContext, true );
 
-    const Error error = _pbo->setup( size, GL_READ_ONLY_ARB );
+    const Error error = _pbo->setup( size, GL_READ_ONLY );
     if( !error )
         return true;
 
@@ -475,6 +477,7 @@ void CompressorReadDrawPixels::startDownload( const GLEWContext* glewContext,
     if( flags & EQ_COMPRESSOR_USE_FRAMEBUFFER )
     {
         // async RB through texture
+#ifndef Darwin
         if( !GLEW_ARB_pixel_buffer_object )
         {
             const PixelViewport pvp( dims[0], dims[2], dims[1], dims[3] );
@@ -484,6 +487,7 @@ void CompressorReadDrawPixels::startDownload( const GLEWContext* glewContext,
             _resizeBuffer( size );
             return;
         }
+#endif
 
         if( _initPBO( glewContext, size ))
         {
@@ -536,11 +540,13 @@ void CompressorReadDrawPixels::finishDownload(
     LBASSERT( flags & EQ_COMPRESSOR_USE_FRAMEBUFFER );
 
     // async RB through texture
+#ifndef Darwin
     if( !GLEW_ARB_pixel_buffer_object )
     {
         *out = _downloadTexture( glewContext, KEEP_TEXTURE );
         return;
     }
+#endif
 
     if( _pbo && _pbo->isInitialized( ))
     {

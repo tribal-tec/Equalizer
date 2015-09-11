@@ -48,21 +48,21 @@ public:
         , fbo( 0 )
         , fboMultiSample( 0 )
     {
-        lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
+        //lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
     }
 
     ~GLWindow()
     {
         glewInitialized = false;
 #ifndef NDEBUG
-        lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
+        //lunchbox::setZero( &glewContext, sizeof( GLEWContext ));
 #endif
     }
 
     bool glewInitialized ;
 
     /** Extended OpenGL function entries when window has a context. */
-    GLEWContext glewContext;
+    //GLEWContext glewContext;
 
     /** Frame buffer object for FBO drawables. */
     util::FrameBufferObject* fbo;
@@ -113,6 +113,10 @@ void GLWindow::initGLEW()
     if( _impl->glewInitialized )
         return;
 
+#ifdef Darwin
+    _impl->glewInitialized = true;
+    return;
+#else
 #ifdef __linux__
     // http://sourceforge.net/p/glew/patches/40/
     glewExperimental = true;
@@ -121,9 +125,11 @@ void GLWindow::initGLEW()
     const GLenum result = glewInit();
     glGetError(); // eat GL errors from buggy glew implementation
     if( result != GLEW_OK )
-        LBWARN << "GLEW initialization failed: " << std::endl;
+        LBWARN << "GLEW initialization failed: " << glewGetErrorString( result )
+               << std::endl;
     else
         _impl->glewInitialized = true;
+#endif
 }
 
 void GLWindow::exitGLEW()
@@ -143,21 +149,21 @@ util::FrameBufferObject* GLWindow::getFrameBufferObject()
 
 const GLEWContext* GLWindow::glewGetContext() const
 {
-    return &_impl->glewContext;
+    return 0;
 }
 
 GLEWContext* GLWindow::glewGetContext()
 {
-    return &_impl->glewContext;
+    return 0;
 }
 
 bool GLWindow::configInitFBO()
 {
-    if( !_impl->glewInitialized || !GLEW_EXT_framebuffer_object )
-    {
-        sendError( ERROR_FBO_UNSUPPORTED );
-        return false;
-    }
+//    if( !_impl->glewInitialized || !GLEW_EXT_framebuffer_object )
+//    {
+//        sendError( ERROR_FBO_UNSUPPORTED );
+//       return false;
+//    }
 
     if( !_createFBO( _impl->fbo, 0 ))
         return false;
@@ -188,7 +194,7 @@ bool GLWindow::_createFBO( util::FrameBufferObject*& fbo, const int samplesSize)
     if( stencilSize == AUTO )
         stencilSize = 1;
 
-    fbo = new util::FrameBufferObject( &_impl->glewContext,
+    fbo = new util::FrameBufferObject( 0,
                                        samplesSize ? GL_TEXTURE_2D_MULTISAMPLE
                                                   : GL_TEXTURE_RECTANGLE_ARB );
     Error error = fbo->init( pvp.w, pvp.h, colorFormat, depthSize,
@@ -225,8 +231,8 @@ void GLWindow::bindFrameBuffer() const
 
    if( _impl->fbo )
        _impl->fbo->bind();
-   else if( GLEW_EXT_framebuffer_object )
-       glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 );
+   else// if( GL_framebuffer_object )
+       glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 void GLWindow::bindDrawFrameBuffer() const
@@ -245,8 +251,8 @@ void GLWindow::updateFrameBuffer() const
     if( !_impl->glewInitialized || !_impl->fboMultiSample )
         return;
 
-    _impl->fboMultiSample->bind( GL_READ_FRAMEBUFFER_EXT );
-    _impl->fbo->bind( GL_DRAW_FRAMEBUFFER_EXT );
+    _impl->fboMultiSample->bind( GL_READ_FRAMEBUFFER );
+    _impl->fbo->bind( GL_DRAW_FRAMEBUFFER );
     const PixelViewport& pvp = getPixelViewport();
     EQ_GL_CALL( glBlitFramebuffer( 0, 0, pvp.w, pvp.h,
                                    0, 0, pvp.w, pvp.h,
@@ -288,6 +294,7 @@ void GLWindow::queryDrawableConfig( DrawableConfig& drawableConfig )
         drawableConfig.coreProfile = mask & GL_CONTEXT_CORE_PROFILE_BIT;
     }
 
+#ifndef Darwin
     TEST_GLEW_VERSION( 1, 1 );
     TEST_GLEW_VERSION( 1, 2 );
     TEST_GLEW_VERSION( 1, 3 );
@@ -307,7 +314,7 @@ void GLWindow::queryDrawableConfig( DrawableConfig& drawableConfig )
     TEST_GLEW_VERSION( 4, 4 );
     TEST_GLEW_VERSION( 4, 5 );
 #endif
-
+#endif
     // Framebuffer capabilities
     GLboolean result;
     EQ_GL_CALL( glGetBooleanv( GL_STEREO, &result ));
@@ -350,10 +357,12 @@ void GLWindow::queryDrawableConfig( DrawableConfig& drawableConfig )
     }
     else
     {
+#ifndef Darwin
         EQ_GL_CALL( glGetIntegerv( GL_STENCIL_BITS, &stencilBits ));
         EQ_GL_CALL( glGetIntegerv( GL_RED_BITS, &colorBits ));
         EQ_GL_CALL( glGetIntegerv( GL_ALPHA_BITS, &alphaBits ));
         EQ_GL_CALL( glGetIntegerv( GL_ACCUM_RED_BITS, &accumBits ));
+#endif
     }
 
     drawableConfig.stencilBits = stencilBits;

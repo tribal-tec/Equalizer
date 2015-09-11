@@ -9,5 +9,5 @@ eq_add_example(eqHello
   SHADERS
     vertexShader.glsl
     fragmentShader.glsl
-  LINK_LIBRARIES Sequel
+  LINK_LIBRARIES Sequel Qt5::Widgets
   )

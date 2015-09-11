@@ -185,6 +185,7 @@ namespace eq
         static void assembleImage( const Image* image,
                                    const ImageOp& operation );
 
+#ifndef Darwin
         /**
          * Setup the stencil buffer for a pixel compound recomposition.
          *
@@ -200,6 +201,7 @@ namespace eq
          * @param operation the assembly parameters.
          */
         static void clearStencilBuffer( const ImageOp& operation );
+#endif
 
         /**
          * Setup the OpenGL state.
@@ -219,11 +221,13 @@ namespace eq
         /** Start a Z-based assembly of the image color and depth attachment. */
         static void assembleImageDB( const Image* image, const ImageOp& op );
 
+#ifndef Darwin
         /**
          * Start a Z-based assembly of the image color and depth attachment,
          * based on OpenGL 1.1 functionality.
          */
         static void assembleImageDB_FF( const Image* image, const ImageOp& op );
+#endif
 
         /**
          * Start a Z-based assembly of the image color and depth attachment,
@@ -314,8 +318,10 @@ namespace eq
         /**
          * draw an image to the frame buffer using a texture quad or drawPixels.
          */
+#ifndef Darwin
         static void _drawPixelsFF( const Image* image, const ImageOp& op,
                                    const Frame::Buffer which );
+#endif
 
         static void _drawPixelsGLSL( const Image* image, const ImageOp& op,
                                      const Frame::Buffer which );

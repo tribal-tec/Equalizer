@@ -122,6 +122,7 @@ void Accum::accum()
         else
             _impl->abo->accum( 1.0f );
     }
+#ifndef Darwin
     else
     {
         // This is the only working implementation on MacOS found at the moment.
@@ -139,6 +140,7 @@ void Accum::accum()
             glAccum( GL_ACCUM, 1.0f );
 #endif
     }
+#endif
 
     ++_impl->numSteps;
 }
@@ -149,6 +151,7 @@ void Accum::display()
 
     if( _impl->abo )
         _impl->abo->display( 1.0f / _impl->numSteps );
+#ifndef Darwin
     else
     {
 #ifdef Darwin
@@ -158,6 +161,7 @@ void Accum::display()
 #endif
         glAccum( GL_RETURN, factor );
     }
+#endif
 }
 
 uint32_t Accum::getMaxSteps() const
@@ -165,9 +169,13 @@ uint32_t Accum::getMaxSteps() const
     if( usesFBO( ))
         return 256;
 
+#ifdef Darwin
+    return 256;
+#else
     GLint accumBits;
     glGetIntegerv( GL_ACCUM_RED_BITS, &accumBits );
     return accumBits >= 16 ? 256 : 0;
+#endif
 }
 
 uint32_t Accum::getNumSteps() const
@@ -201,7 +209,7 @@ const GLEWContext* Accum::glewGetContext() const
 #ifdef Darwin
 bool Accum::usesFBO( const GLEWContext* )
 {
-    return false;
+    return true;
 }
 #else
 bool Accum::usesFBO( const GLEWContext* glewContext )

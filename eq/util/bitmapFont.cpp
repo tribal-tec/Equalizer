@@ -68,14 +68,16 @@ void BitmapFont::exit()
         _impl->om.deleteList( _impl->key );
 }
 
-void BitmapFont::draw( const std::string& text ) const
+void BitmapFont::draw( const std::string& /*text*/ ) const
 {
     const GLuint lists = _impl->om.getList( _impl->key );
     if( lists != ObjectManager::INVALID )
     {
+#ifndef Darwin
         glListBase( lists );
         glCallLists( GLsizei( text.size( )), GL_UNSIGNED_BYTE, text.c_str( ));
         glListBase( 0 );
+#endif
     }
 }
 

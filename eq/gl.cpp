@@ -43,10 +43,12 @@ std::string glError( const GLenum error )
         return std::string( "GL_INVALID_VALUE" );
     case GL_INVALID_OPERATION:
         return std::string( "GL_INVALID_OPERATION" );
+#ifndef Darwin
     case GL_STACK_OVERFLOW:
         return std::string( "GL_STACK_OVERFLOW" );
     case GL_STACK_UNDERFLOW:
         return std::string( "GL_STACK_UNDERFLOW" );
+#endif
     case GL_OUT_OF_MEMORY:
         return std::string( "GL_OUT_OF_MEMORY" );
     case GL_INVALID_FRAMEBUFFER_OPERATION:

@@ -149,18 +149,18 @@ void Texture::_setInternalFormat( const GLuint internalFormat )
         case GL_RGB32F:
             setExternalFormat( GL_RGB, GL_FLOAT );
             break;
-        case GL_ALPHA32F_ARB:
-            setExternalFormat( GL_ALPHA, GL_FLOAT );
-            break;
+//        case GL_ALPHA32F:
+//            setExternalFormat( GL_ALPHA, GL_FLOAT );
+//            break;
         case GL_DEPTH24_STENCIL8:
             setExternalFormat( GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8 );
             break;
         case GL_RGBA32UI:
             LBASSERT( _impl->glewContext );
-            if( GLEW_EXT_texture_integer )
-                setExternalFormat( GL_RGBA_INTEGER_EXT, GL_UNSIGNED_INT );
-            else
-                LBUNIMPLEMENTED;
+            //if( GLEW_EXT_texture_integer )
+                setExternalFormat( GL_RGBA_INTEGER, GL_UNSIGNED_INT );
+            //else
+            //    LBUNIMPLEMENTED;
             break;
 
         default:
@@ -307,8 +307,8 @@ void Texture::bindToFBO( const GLenum target, const int32_t width,
     EQ_GL_CALL( glBindTexture( _impl->target, _impl->name ));
     EQ_GL_CALL( glTexImage2D( _impl->target, 0, _impl->internalFormat, width,
                               height, 0, _impl->format, _impl->type, 0 ));
-    EQ_GL_CALL( glFramebufferTexture2DEXT( GL_FRAMEBUFFER, target,
-                                           _impl->target, _impl->name, 0 ));
+    EQ_GL_CALL( glFramebufferTexture2D( GL_FRAMEBUFFER, target,
+                                        _impl->target, _impl->name, 0 ));
 
     if( samples > 1 )
     {
@@ -335,7 +335,7 @@ void Texture::resize( const int32_t width, const int32_t height )
     if( _impl->target == GL_TEXTURE_2D && !_isPOT( width, height ))
     {
         LBASSERT( _impl->glewContext );
-        LBASSERT( GLEW_ARB_texture_non_power_of_two );
+        //LBASSERT( GLEW_ARB_texture_non_power_of_two );
     }
 
     EQ_GL_CALL( glBindTexture( _impl->target, _impl->name ));

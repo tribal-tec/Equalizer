@@ -45,11 +45,11 @@ QSurfaceFormat _createFormat( const WindowSettings& settings )
     // defaults: http://doc.qt.io/qt-5/qsurfaceformat.html
     QSurfaceFormat format;
 
-    const int coreProfile = getAttribute( IATTR_HINT_CORE_PROFILE );
-    if( coreProfile == ON )
+    //const int coreProfile = getAttribute( IATTR_HINT_CORE_PROFILE );
+    //if( coreProfile == ON )
     {
-        format.setMajorVersion( getAttribute( IATTR_HINT_OPENGL_MAJOR ));
-        format.setMinorVersion( getAttribute( IATTR_HINT_OPENGL_MINOR ));
+        format.setMajorVersion( 3 );
+        format.setMinorVersion( 3 );
         format.setProfile( QSurfaceFormat::CoreProfile );
     }
 

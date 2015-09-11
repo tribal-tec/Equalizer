@@ -123,32 +123,37 @@ bool AccumBufferObject::resize( const PixelViewport& pvp )
 
 void AccumBufferObject::_setup( const PixelViewport& pvp )
 {
-    EQ_GL_CALL( glGetIntegerv( GL_FRAMEBUFFER_BINDING_EXT, &_previousFBO ));
+    EQ_GL_CALL( glGetIntegerv( GL_FRAMEBUFFER_BINDING, &_previousFBO ));
     bind();
+ #ifndef Darwin
     EQ_GL_CALL( glPushAttrib( GL_SCISSOR_BIT | GL_VIEWPORT_BIT |
                               GL_TRANSFORM_BIT ));
     EQ_GL_CALL( glMatrixMode(GL_PROJECTION));
     EQ_GL_CALL( glPushMatrix());
     EQ_GL_CALL( glLoadIdentity());
     EQ_GL_CALL( glOrtho(0, pvp.w, 0, pvp.h, -1, 1));
+#endif
     EQ_GL_CALL( glScissor(0, 0, pvp.w, pvp.h));
     EQ_GL_CALL( glViewport(0, 0, pvp.w, pvp.h));
 }
 
 void AccumBufferObject::_reset()
 {
+#ifndef Darwin
     EQ_GL_CALL( glMatrixMode(GL_PROJECTION));
     EQ_GL_CALL( glPopMatrix());
     EQ_GL_CALL( glPopAttrib());
-    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _previousFBO ));
+#endif
+    EQ_GL_CALL( glBindFramebuffer( GL_FRAMEBUFFER, _previousFBO ));
 }
 
 void AccumBufferObject::_drawQuadWithTexture( Texture* texture,
-                                              const PixelViewport& pvp,
-                                              const GLfloat value )
+                                              const PixelViewport& /*pvp*/,
+                                              const GLfloat /*value*/ )
 {
     texture->bind();
 
+#ifndef Darwin
     EQ_GL_CALL( glDepthMask( false ));
     EQ_GL_CALL( glDisable( GL_LIGHTING ));
     EQ_GL_CALL( glEnable( GL_TEXTURE_RECTANGLE_ARB ));
@@ -180,6 +185,7 @@ void AccumBufferObject::_drawQuadWithTexture( Texture* texture,
     // restore state
     EQ_GL_CALL( glDisable( GL_TEXTURE_RECTANGLE_ARB ));
     EQ_GL_CALL( glDepthMask( true ));
+#endif
 }
 
 }

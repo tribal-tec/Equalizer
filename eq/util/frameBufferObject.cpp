@@ -38,7 +38,7 @@ FrameBufferObject::FrameBufferObject( const GLEWContext* glewContext,
     , _glewContext( glewContext )
     , _valid( false )
 {
-    LBASSERT( GLEW_EXT_framebuffer_object );
+    //LBASSERT( GLEW_EXT_framebuffer_object );
     _colors.push_back( new Texture( textureTarget, glewContext ));
 }
 
@@ -89,8 +89,8 @@ Error FrameBufferObject::init( const int32_t width, const int32_t height,
         return Error( ERROR_FRAMEBUFFER_INITIALIZED );
 
     // generate and bind the framebuffer
-    EQ_GL_CALL( glGenFramebuffersEXT( 1, &_fboID ));
-    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _fboID ));
+    EQ_GL_CALL( glGenFramebuffers( 1, &_fboID ));
+    EQ_GL_CALL( glBindFramebuffer( GL_FRAMEBUFFER, _fboID ));
 
     GLint mask;
     glGetIntegerv( GL_CONTEXT_PROFILE_MASK, &mask );
@@ -105,7 +105,7 @@ Error FrameBufferObject::init( const int32_t width, const int32_t height,
         _colors[i]->bindToFBO( GL_COLOR_ATTACHMENT0 + i, width, height,
                                samplesSize );
     }
-    if( stencilSize > 0 && ( GLEW_EXT_packed_depth_stencil || coreContext ))
+    if( stencilSize > 0 && ( coreContext ))
     {
         _depth.init( GL_DEPTH24_STENCIL8, width, height );
         _depth.bindToFBO( GL_DEPTH_STENCIL_ATTACHMENT, width, height,
@@ -131,8 +131,8 @@ void FrameBufferObject::exit()
     LB_TS_THREAD( _thread );
     if( _fboID )
     {
-        glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 );
-        glDeleteFramebuffersEXT( 1, &_fboID );
+        glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+        glDeleteFramebuffers( 1, &_fboID );
         _fboID = 0;
     }
 
@@ -147,36 +147,36 @@ Error FrameBufferObject::_checkStatus()
 {
     _valid = false;
 
-    const GLenum status = glCheckFramebufferStatusEXT( GL_FRAMEBUFFER_EXT );
+    const GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     switch( status )
     {
-    case GL_FRAMEBUFFER_COMPLETE_EXT:
+    case GL_FRAMEBUFFER_COMPLETE:
         _valid = true;
         return Error( ERROR_NONE );
 
     case 0: // error?!
-        EQ_GL_ERROR( "glCheckFramebufferStatusEXT" );
+        EQ_GL_ERROR( "glCheckFramebufferStatus" );
         return Error( ERROR_FRAMEBUFFER_STATUS );
 
-    case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+    case GL_FRAMEBUFFER_UNSUPPORTED:
         return Error( ERROR_FRAMEBUFFER_UNSUPPORTED );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
         return Error( ERROR_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
         return Error( ERROR_FRAMEBUFFER_INCOMPLETE_ATTACHMENT );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-        return Error( ERROR_FRAMEBUFFER_INCOMPLETE_DIMENSIONS );
+//    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+//        return Error( ERROR_FRAMEBUFFER_INCOMPLETE_DIMENSIONS );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-        return Error( ERROR_FRAMEBUFFER_INCOMPLETE_FORMATS );
+//    case GL_FRAMEBUFFER_INCOMPLETE_FORMATS:
+//        return Error( ERROR_FRAMEBUFFER_INCOMPLETE_FORMATS );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
         return Error( ERROR_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER );
 
-    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
         return Error( ERROR_FRAMEBUFFER_INCOMPLETE_READ_BUFFER );
 
     default:
@@ -190,12 +190,12 @@ void FrameBufferObject::bind( const uint32_t target )
 {
     LB_TS_THREAD( _thread );
     LBASSERT( _fboID );
-    EQ_GL_CALL( glBindFramebufferEXT( target, _fboID ));
+    EQ_GL_CALL( glBindFramebuffer( target, _fboID ));
 }
 
 void FrameBufferObject::unbind( const uint32_t target )
 {
-    EQ_GL_CALL( glBindFramebufferEXT( target, 0 ));
+    EQ_GL_CALL( glBindFramebuffer( target, 0 ));
 }
 
 Error FrameBufferObject::resize( const int32_t width, const int32_t height )

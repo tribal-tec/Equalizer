@@ -45,7 +45,7 @@
 #      include <GL/wglew.h>
 #    endif
 #  else
-#    include <eq/GL/glew.h>
+#    //include <eq/GL/glew.h>
 #    ifdef GLX
 #      include <eq/GL/glxew.h>
 #    endif
@@ -55,8 +55,10 @@
 #  endif
 #endif
 
-#ifdef AGL
-#  include <OpenGL/gl.h>
+#ifdef Darwin
+#  define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
+#  include <OpenGL/gl3.h>
+#  include <OpenGL/gl3ext.h>
 #else
 #  include <eq/os.h>
 #  include <GL/gl.h>
