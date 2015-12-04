@@ -400,6 +400,7 @@ void Channel::frameViewStart( const uint128_t& ) { /* nop */ }
 
 void Channel::frameViewFinish( const uint128_t& )
 {
+    drawOverlay();
     _impl->frameViewFinish( *this );
 }
 
@@ -939,6 +940,20 @@ void Channel::outlineViewport()
         glVertex3f( pvp.getXEnd() - .5f, pvp.getYEnd() - .5f, 0.f );
         glVertex3f( pvp.x + .5f,         pvp.getYEnd() - .5f, 0.f );
     } glEnd();
+
+    resetAssemblyState();
+}
+
+void Channel::drawOverlay()
+{
+    applyBuffer();
+    applyViewport();
+    setupAssemblyState();
+
+#ifdef EQUALIZER_USE_DEFLECT
+    if( _impl->_dcProxy && _impl->_dcProxy->isRunning( ))
+        _impl->_dcProxy->drawInfo();
+#endif
 
     resetAssemblyState();
 }

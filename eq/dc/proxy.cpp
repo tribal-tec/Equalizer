@@ -51,12 +51,13 @@ deflect::Stream::Future make_ready_future( const bool value )
 class Proxy : public boost::noncopyable
 {
 public:
-    explicit Proxy( eq::Channel* ch )
+    explicit Proxy( eq::Channel* channel )
         : _stream( 0 )
         , _eventHandler( 0 )
-        , _channel( ch )
+        , _channel( channel )
         , _sendFuture( make_ready_future( false ))
         , _running( false )
+        , _swapButtons( false )
     {
         const DrawableConfig& dc = _channel->getDrawableConfig();
         if( dc.colorBits != 8 )
@@ -128,6 +129,7 @@ public:
     lunchbox::Bufferb buffer;
     deflect::Stream::Future _sendFuture;
     bool _running;
+    bool _swapButtons;
 };
 }
 
@@ -183,6 +185,42 @@ void Proxy::stopRunning()
 deflect::Event Proxy::getEvent() const
 {
     return _impl->_stream->getEvent();
+}
+
+void Proxy::toggleMouseButtons()
+{
+    _impl->_swapButtons = !_impl->_swapButtons;
+}
+
+bool Proxy::buttonsSwapped() const
+{
+    return _impl->_swapButtons;
+}
+
+void Proxy::drawInfo()
+{
+    glLogicOp( GL_XOR );
+    glEnable( GL_COLOR_LOGIC_OP );
+    glDisable( GL_LIGHTING );
+    glDisable( GL_DEPTH_TEST );
+
+    glColor3f( 1.f, 1.f, 1.f );
+
+    const eq::PixelViewport& pvp = _impl->_channel->getPixelViewport();
+    const eq::Viewport& vp = _impl->_channel->getViewport();
+    const float height = pvp.h / vp.h;
+
+    const eq::util::BitmapFont* font = _impl->_channel->getWindow()->getMediumFont();
+
+    const float width = pvp.w / vp.w;
+    const float xOffset = vp.x * width;
+
+    const float yOffset = vp.y * height;
+    const float yPos = 0.952f * height;
+    float y = yPos - yOffset;
+
+    glRasterPos3f( 10.f - xOffset, y, 0.99f );
+    font->draw( buttonsSwapped() ? "Pan mode" : "Rotate mode" );
 }
 
 }

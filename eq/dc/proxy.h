@@ -63,6 +63,11 @@ public:
     /** @return the latest window Event. @sa hasNewEvent() */
     deflect::Event getEvent() const;
 
+    void toggleMouseButtons();
+    bool buttonsSwapped() const;
+
+    void drawInfo();
+
 private:
     detail::Proxy* const _impl;
 };

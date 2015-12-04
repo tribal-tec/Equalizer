@@ -39,7 +39,7 @@ static lunchbox::PerThread< EventHandlers > _eventHandlers;
 }
 
 EventHandler::EventHandler( Proxy* proxy )
-        : _proxy( proxy )
+    : _proxy( proxy )
 {
     LBASSERT( proxy );
 
@@ -101,7 +101,7 @@ void EventHandler::_processEvents( const Proxy* proxy )
 
     while( _proxy->hasNewEvent( ))
     {
-        const deflect::Event& dcEvent = _proxy->getEvent();
+        deflect::Event dcEvent = _proxy->getEvent();
 
         if( dcEvent.type == deflect::Event::EVT_CLOSE )
         {
@@ -119,6 +119,9 @@ void EventHandler::_processEvents( const Proxy* proxy )
 
         const float x = dcEvent.mouseX * pvp.w;
         const float y = dcEvent.mouseY * pvp.h;
+
+        if( _proxy->buttonsSwapped( ))
+            std::swap( dcEvent.mouseLeft, dcEvent.mouseRight );
 
         switch( dcEvent.type )
         {
@@ -173,6 +176,15 @@ void EventHandler::_processEvents( const Proxy* proxy )
             event.pointerMotion.dx = -dcEvent.dx;
             event.pointerMotion.dy = -dcEvent.dy;
             break;
+        case deflect::Event::EVT_TAP_AND_HOLD:
+        {
+            _proxy->toggleMouseButtons();
+            Event windowEvent;
+            windowEvent.originator = window->getID();
+            windowEvent.serial = window->getSerial();
+            windowEvent.type = Event::WINDOW_EXPOSE;
+            window->processEvent( windowEvent );
+        } break;
         case deflect::Event::EVT_NONE:
         default:
             break;

@@ -351,6 +351,8 @@ public:
     /** Outline the current pixel viewport. @version 1.0 */
     EQ_API virtual void outlineViewport();
 
+    EQ_API void drawOverlay();
+
     /**
      * @internal
      * Change the latency.
