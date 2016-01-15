@@ -23,6 +23,8 @@ namespace eq
 namespace fabric
 {
 
+const Frustumf Frustumf::DEFAULT( -1.f, 1.f, -1.f, 1.f, 0.1f, 100.f );
+
 // cppcheck-suppress uninitMemberVar
 RenderContext::RenderContext()
         : frustum( Frustumf::DEFAULT )

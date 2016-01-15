@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2008-2013, Stefan Eilemann <eile@equalizergraphics.com> 
+/* Copyright (c) 2008-2013, Stefan Eilemann <eile@equalizergraphics.com>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -40,16 +40,16 @@ void VertexBufferBase::drawBoundingSphere(VertexBufferState& state ) const
         displayList = state.newDisplayList( &_boundingSphere );
         glNewList( displayList, GL_COMPILE );
 
-        const float x  = _boundingSphere.x();
-        const float y  = _boundingSphere.y();
-        const float z  = _boundingSphere.z();
-        const float x1 = x - _boundingSphere.w();
-        const float x2 = x + _boundingSphere.w();
-        const float y1 = y - _boundingSphere.w();
-        const float y2 = y + _boundingSphere.w();
-        const float z1 = z - _boundingSphere.w();
-        const float z2 = z + _boundingSphere.w();
-        const float size = _boundingSphere.w();
+        const float x  = _boundingSphere.x;
+        const float y  = _boundingSphere.y;
+        const float z  = _boundingSphere.z;
+        const float x1 = x - _boundingSphere.w;
+        const float x2 = x + _boundingSphere.w;
+        const float y1 = y - _boundingSphere.w;
+        const float y2 = y + _boundingSphere.w;
+        const float z1 = z - _boundingSphere.w;
+        const float z2 = z + _boundingSphere.w;
+        const float size = _boundingSphere.w;
 
         glBegin( GL_QUADS );
             glNormal3f( 1.0f, 0.0f, 0.0f );

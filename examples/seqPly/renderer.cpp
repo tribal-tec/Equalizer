@@ -87,7 +87,7 @@ void Renderer::draw( co::Object* frameDataObj )
     const eq::Matrix4f& modelM = getModelMatrix();
     const eq::Matrix4f& view = getViewMatrix();
     const eq::Frustumf& frustum = getFrustum();
-    const eq::Matrix4f projection = frustum.compute_matrix();
+    const eq::Matrix4f projection = glm::frustum( frustum.left, frustum.right, frustum.bottom, frustum.top, frustum.near, frustum.far );
     const eq::Matrix4f pmv = projection * view * modelM;
     const seq::RenderContext& context = getRenderContext();
 

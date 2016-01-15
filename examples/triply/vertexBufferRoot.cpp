@@ -40,6 +40,8 @@
 #   include <sys/mman.h>
 #endif
 
+#include <vmmlib/frustum_culler.hpp>
+
 namespace triply
 {
 
@@ -79,7 +81,9 @@ void VertexBufferRoot::cullDraw( VertexBufferState& state ) const
 
     const Range& range = state.getRange();
     FrustumCuller culler;
-    culler.setup( state.getProjectionModelViewMatrix( ));
+    vmml::Matrix4f mat;
+    mat = glm::value_ptr( state.getProjectionModelViewMatrix( ));
+    culler.setup( mat );
 
     // start with root node
     std::vector< const triply::VertexBufferBase* > candidates;
@@ -101,8 +105,10 @@ void VertexBufferRoot::cullDraw( VertexBufferState& state ) const
         }
 
         // bounding sphere view frustum culling
+        vmml::Vector4f sphere;
+        sphere = glm::value_ptr( treeNode->getBoundingSphere( ));
         const vmml::Visibility visibility = state.useFrustumCulling() ?
-                            culler.test_sphere( treeNode->getBoundingSphere( )) :
+                            culler.test_sphere( sphere ) :
                             vmml::VISIBILITY_FULL;
         switch( visibility )
         {

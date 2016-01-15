@@ -496,8 +496,8 @@ bool Image::upload( const Frame::Buffer buffer, util::Texture* texture,
     }
 
     PixelViewport pvp = getPixelViewport();
-    pvp.x = position.x() + pvp.x;
-    pvp.y = position.y() + pvp.y;
+    pvp.x = position.x + pvp.x;
+    pvp.y = position.y + pvp.y;
     if( texture )
         texture->init( internalFormat, _impl->pvp.w, _impl->pvp.h );
 

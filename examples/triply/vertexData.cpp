@@ -33,6 +33,8 @@
 #include <cstdlib>
 #include <algorithm>
 
+#include <glm/gtx/normal.hpp>
+
 #if (( __GNUC__ > 4 ) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 4)) )
 #  include <parallel/algorithm>
 using __gnu_parallel::sort;
@@ -243,11 +245,12 @@ void VertexData::calculateNormals()
         const Index i0 = triangles[i][0];
         const Index i1 = triangles[i][1];
         const Index i2 = triangles[i][2];
-        const Normal normal = vertices[i0].compute_normal( vertices[i1],
-                                                           vertices[i2] );
+        const Normal normal = glm::triangleNormal( vertices[i0],
+                                                   vertices[i1],
+                                                   vertices[i2] );
 #ifndef NDEBUG
         // count emtpy normals in debug mode
-        if( normal.length() == 0.0f )
+        if( glm::length( normal )== 0.0f )
             ++wrongNormals; // racy with OpenMP, but not critical
 #endif
 
@@ -259,7 +262,7 @@ void VertexData::calculateNormals()
     // normalize all the normals
 #pragma omp parallel for
     for( ssize_t i = 0; i < ssize_t( vertices.size( )); ++i )
-        normals[i].normalize();
+        normals[i] = glm::normalize( normals[i] );
 
 #ifndef NDEBUG
     if( wrongNormals > 0 )
@@ -326,7 +329,7 @@ Axis VertexData::getLongestAxis( const size_t start,
 void VertexData::scale( const float baseSize )
 {
     // calculate bounding box if not yet done
-    if( _boundingBox[0].length() == 0.0f && _boundingBox[1].length() == 0.0f )
+    if( glm::length( _boundingBox[0] ) == 0.0f && glm::length( _boundingBox[1] ) == 0.0f )
         calculateBoundingBox();
 
     // find largest dimension and determine scale factor

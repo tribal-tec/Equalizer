@@ -108,19 +108,19 @@ const BoundingSphere& VertexBufferLeaf::updateBoundingSphere()
     }
 
     // 1b) get inner sphere of bounding box as an initial estimate
-    _boundingSphere.x() = ( _boundingBox[0].x() + _boundingBox[1].x() ) * 0.5f;
-    _boundingSphere.y() = ( _boundingBox[0].y() + _boundingBox[1].y() ) * 0.5f;
-    _boundingSphere.z() = ( _boundingBox[0].z() + _boundingBox[1].z() ) * 0.5f;
+    _boundingSphere.x = ( _boundingBox[0].x + _boundingBox[1].x ) * 0.5f;
+    _boundingSphere.y = ( _boundingBox[0].y + _boundingBox[1].y ) * 0.5f;
+    _boundingSphere.z = ( _boundingBox[0].z + _boundingBox[1].z ) * 0.5f;
 
-    _boundingSphere.w()  = std::max( _boundingBox[1].x() - _boundingBox[0].x(),
-                                     _boundingBox[1].y() - _boundingBox[0].y());
-    _boundingSphere.w()  = std::max( _boundingBox[1].z() - _boundingBox[0].z(),
-                                     _boundingSphere.w( ));
-    _boundingSphere.w() *= .5f;
+    _boundingSphere.w  = std::max( _boundingBox[1].x - _boundingBox[0].x,
+                                   _boundingBox[1].y - _boundingBox[0].y );
+    _boundingSphere.w  = std::max( _boundingBox[1].z - _boundingBox[0].z,
+                                   _boundingSphere.w );
+    _boundingSphere.w *= .5f;
 
-    float  radius        = _boundingSphere.w();
+    float  radius        = _boundingSphere.w;
     float  radiusSquared =  radius * radius;
-    Vertex center( _boundingSphere.array );
+    Vertex center( _boundingSphere );
 
     // 2) test all points to be in the estimated bounding sphere
     for( Index offset = 0; offset < _indexLength; ++offset )
@@ -130,12 +130,12 @@ const BoundingSphere& VertexBufferLeaf::updateBoundingSphere()
                                   _globalData.indices[_indexStart + offset] ];
 
         const Vertex centerToPoint   = vertex - center;
-        const float  distanceSquared = centerToPoint.squared_length();
+        const float distance = glm::length( centerToPoint );
+        const float distanceSquared = distance * distance;
         if( distanceSquared <= radiusSquared ) // point is inside existing BS
             continue;
 
         // 3) expand sphere to contain 'outside' points
-        const float distance = sqrtf( distanceSquared );
         const float delta    = distance - radius;
 
         radius        = ( radius + distance ) * .5f;
@@ -144,10 +144,10 @@ const BoundingSphere& VertexBufferLeaf::updateBoundingSphere()
 
         center       += normdelta;
 
-        LBASSERTINFO( Vertex( vertex-center ).squared_length() <=
+        LBASSERTINFO( glm::length( vertex-center ) * glm::length( vertex-center )  <=
                 ( radiusSquared + 2.f * std::numeric_limits<float>::epsilon( )),
                       vertex << " c " << center << " r " << radius << " ("
-                             << Vertex( vertex-center ).length() << ")" );
+                             << glm::length( vertex-center ) << ")" );
     }
 
 #ifndef NDEBUG
@@ -159,19 +159,20 @@ const BoundingSphere& VertexBufferLeaf::updateBoundingSphere()
                                   _globalData.indices[_indexStart + offset] ];
 
         const Vertex centerToPoint   = vertex - center;
-        const float  distanceSquared = centerToPoint.squared_length();
+        const float distance = glm::length( centerToPoint );
+        const float distanceSquared = distance * distance;
         LBASSERTINFO( distanceSquared <=
                 ( radiusSquared + 2.f * std::numeric_limits<float>::epsilon( )),
                       vertex << " c " << center << " r " << radius << " ("
-                             << Vertex( vertex-center ).length() << ")" );
+                             << glm::length( vertex-center ) << ")" );
     }
 #endif
 
     // store optimal bounding sphere
-    _boundingSphere.x() = center.x();
-    _boundingSphere.y() = center.y();
-    _boundingSphere.z() = center.z();
-    _boundingSphere.w() = radius;
+    _boundingSphere.x = center.x;
+    _boundingSphere.y = center.y;
+    _boundingSphere.z = center.z;
+    _boundingSphere.w = radius;
     return _boundingSphere;
 }
 

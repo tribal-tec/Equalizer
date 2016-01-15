@@ -24,7 +24,7 @@ set(TRIPLY_SOURCES
   vertexData.cpp)
 
 set(TRIPLY_LINK_LIBRARIES
-  Collage vmmlib ${EQ_GL_LIBRARIES} ${GLEW_LIBRARY})
+  Collage vmmlib glm ${EQ_GL_LIBRARIES} ${GLEW_LIBRARY})
 set(TRIPLY_INCLUDE_NAME triply)
 
 list(APPEND CPPCHECK_EXTRA_ARGS

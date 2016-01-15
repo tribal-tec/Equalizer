@@ -27,6 +27,8 @@
 #include <co/dataIStream.h>
 #include <co/dataOStream.h>
 
+#include <glm/gtx/matrix_decompose.hpp>
+
 namespace seq
 {
 ViewData::ViewData()
@@ -164,13 +166,19 @@ void ViewData::spinModel( const float x, const float y, const float z )
     if( x == 0.f && y == 0.f && z == 0.f )
         return;
 
-    Vector3f translation;
-    _modelMatrix.get_translation( translation );
-    _modelMatrix.set_translation( Vector3f::ZERO );
-    _modelMatrix.pre_rotate_x( x );
-    _modelMatrix.pre_rotate_y( y );
-    _modelMatrix.pre_rotate_z( z );
-    _modelMatrix.set_translation( translation);
+    glm::vec3 scale;
+    glm::quat orientation;
+    glm::vec3 translation;
+    glm::vec3 skew(1);
+    glm::vec4 perspective(1);
+
+    glm::decompose( _modelMatrix, scale, orientation, translation, skew, perspective);
+    orientation = glm::rotate( orientation, x, Vector3f::X );
+    orientation = glm::rotate( orientation, y, Vector3f::Y );
+    orientation = glm::rotate( orientation, z, Vector3f::Z );
+
+    _modelMatrix = glm::toMat4( orientation );
+    _modelMatrix = glm::translate( _modelMatrix, translation );
     setDirty( DIRTY_MODELMATRIX );
 }
 
@@ -179,8 +187,7 @@ void ViewData::moveModel( const float x, const float y, const float z )
     if( x == 0.f && y == 0.f && z == 0.f )
         return;
 
-    _modelMatrix.set_translation( _modelMatrix.get_translation() +
-                                  Vector3f( x, y, z ));
+    _modelMatrix[3] += Vector4f( x, y, z, 0.f );
     setDirty( DIRTY_MODELMATRIX );
 }
 

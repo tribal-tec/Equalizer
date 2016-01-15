@@ -630,7 +630,7 @@ void Compound::computeFrustum( RenderContext& context, const Eye eye ) const
     const Vector3f& eyeWorld = _getEyePosition( eye );
     const FrustumData& frustumData = getInheritFrustumData();
     const Matrix4f& xfm = frustumData.getTransform();
-    const Vector3f eyeWall = xfm * eyeWorld;
+    const Vector3f eyeWall = Vector3f( xfm * Vector4f( eyeWorld, 1.0f ));
 
     LBVERB << "Eye position world: " << eyeWorld << " wall " << eyeWall
         << std::endl;
@@ -644,7 +644,7 @@ void Compound::computeTileFrustum( Frustumf& frustum, const Eye eye,
     const Vector3f& eyeWorld = _getEyePosition( eye );
     const FrustumData& frustumData = getInheritFrustumData();
     const Matrix4f& xfm = frustumData.getTransform();
-    const Vector3f eyeWall = xfm * eyeWorld;
+    const Vector3f eyeWall = Vector3f( xfm * Vector4f( eyeWorld, 1.0f ));
 
     _computeFrustumCorners( frustum, frustumData, eyeWall, ortho, &vp );
 }
@@ -655,12 +655,14 @@ static void _computeHeadTransform( Matrix4f& result, const Matrix4f& xfm,
                                    const Vector3f& eye )
 {
     // headTransform = -trans(eye) * view matrix (frustum position)
+    float* resultarray = glm::value_ptr( result );
+    const float* xfmarray = glm::value_ptr( xfm );
     for( int i=0; i<16; i += 4 )
     {
-        result.array[i]   = xfm.array[i]   - eye[0] * xfm.array[i+3];
-        result.array[i+1] = xfm.array[i+1] - eye[1] * xfm.array[i+3];
-        result.array[i+2] = xfm.array[i+2] - eye[2] * xfm.array[i+3];
-        result.array[i+3] = xfm.array[i+3];
+        resultarray[i]   = xfmarray[i]   - eye[0] * xfmarray[i+3];
+        resultarray[i+1] = xfmarray[i+1] - eye[1] * xfmarray[i+3];
+        resultarray[i+2] = xfmarray[i+2] - eye[2] * xfmarray[i+3];
+        resultarray[i+3] = xfmarray[i+3];
     }
 }
 }
@@ -685,14 +687,15 @@ void Compound::_computeOrtho( RenderContext& context, const Vector3f& eye) const
     const Vector3f& cyclopWorld = _getEyePosition( EYE_CYCLOP );
     const FrustumData& frustumData = getInheritFrustumData();
     const Matrix4f& xfm = frustumData.getTransform();
-    const Vector3f cyclopWall = xfm * cyclopWorld;
+    const Vector3f cyclopWall = Vector3f( xfm * Vector4f( cyclopWorld, 1.0f ));
 
     _computeFrustumCorners( context.ortho, frustumData, cyclopWall, true );
     _computeHeadTransform( context.orthoTransform, xfm, eye );
 
     // Apply stereo shearing
-    context.orthoTransform.array[8] += (cyclopWall[0] - eye[0]) / eye[2];
-    context.orthoTransform.array[9] += (cyclopWall[1] - eye[1]) / eye[2];
+    float* array = glm::value_ptr( context.orthoTransform );
+    array[8] += (cyclopWall[0] - eye[0]) / eye[2];
+    array[9] += (cyclopWall[1] - eye[1]) / eye[2];
 
     const bool isHMD = (frustumData.getType() != Wall::TYPE_FIXED);
     if( isHMD )
@@ -750,23 +753,23 @@ void Compound::_computeFrustumCorners( Frustumf& frustum,
     const Channel* destination = getInheritChannel();
     frustum = destination->getFrustum();
 
-    const float ratio    = ortho ? 1.0f : frustum.near_plane() / eye.z();
+    const float ratio    = ortho ? 1.0f : frustum.near / eye.z;
     const float width_2  = frustumData.getWidth()  * .5f;
     const float height_2 = frustumData.getHeight() * .5f;
 
-    if( eye.z() > 0 || ortho )
+    if( eye.z > 0 || ortho )
     {
-        frustum.left()   =  ( -width_2  - eye.x() ) * ratio;
-        frustum.right()  =  (  width_2  - eye.x() ) * ratio;
-        frustum.bottom() =  ( -height_2 - eye.y() ) * ratio;
-        frustum.top()    =  (  height_2 - eye.y() ) * ratio;
+        frustum.left   =  ( -width_2  - eye.x ) * ratio;
+        frustum.right  =  (  width_2  - eye.x ) * ratio;
+        frustum.bottom =  ( -height_2 - eye.y ) * ratio;
+        frustum.top    =  (  height_2 - eye.y ) * ratio;
     }
     else // eye behind near plane - 'mirror' x
     {
-        frustum.left()   =  (  width_2  - eye.x() ) * ratio;
-        frustum.right()  =  ( -width_2  - eye.x() ) * ratio;
-        frustum.bottom() =  (  height_2 + eye.y() ) * ratio;
-        frustum.top()    =  ( -height_2 + eye.y() ) * ratio;
+        frustum.left   =  (  width_2  - eye.x ) * ratio;
+        frustum.right  =  ( -width_2  - eye.x ) * ratio;
+        frustum.bottom =  (  height_2 + eye.y ) * ratio;
+        frustum.top    =  ( -height_2 + eye.y ) * ratio;
     }
 
     // move frustum according to pixel decomposition
@@ -778,23 +781,23 @@ void Compound::_computeFrustumCorners( Frustumf& frustum,
 
         if( pixel.w > 1 )
         {
-            const float         frustumWidth = frustum.right() - frustum.left();
+            const float         frustumWidth = frustum.right - frustum.left;
             const float           pixelWidth = frustumWidth /
                 static_cast<float>( destPVP.w );
             const float               jitter = pixelWidth * pixel.x -
                 pixelWidth * .5f;
 
-            frustum.left()  += jitter;
-            frustum.right() += jitter;
+            frustum.left  += jitter;
+            frustum.right += jitter;
         }
         if( pixel.h > 1 )
         {
-            const float frustumHeight = frustum.bottom() - frustum.top();
+            const float frustumHeight = frustum.bottom - frustum.top;
             const float pixelHeight = frustumHeight / float( destPVP.h );
             const float jitter = pixelHeight * pixel.y + pixelHeight * .5f;
 
-            frustum.top()    -= jitter;
-            frustum.bottom() -= jitter;
+            frustum.top    -= jitter;
+            frustum.bottom -= jitter;
         }
     }
 
@@ -803,13 +806,13 @@ void Compound::_computeFrustumCorners( Frustumf& frustum,
     const Viewport& vp = invp ? *invp : getInheritViewport();
     if( vp != Viewport::FULL && vp.isValid( ))
     {
-        const float frustumWidth = frustum.right() - frustum.left();
-        frustum.left()  += frustumWidth * vp.x;
-        frustum.right()  = frustum.left() + frustumWidth * vp.w;
+        const float frustumWidth = frustum.right - frustum.left;
+        frustum.left  += frustumWidth * vp.x;
+        frustum.right  = frustum.left + frustumWidth * vp.w;
 
-        const float frustumHeight = frustum.top() - frustum.bottom();
-        frustum.bottom() += frustumHeight * vp.y;
-        frustum.top()     = frustum.bottom() + frustumHeight * vp.h;
+        const float frustumHeight = frustum.top - frustum.bottom;
+        frustum.bottom += frustumHeight * vp.y;
+        frustum.top     = frustum.bottom + frustumHeight * vp.h;
     }
 }
 
@@ -832,17 +835,17 @@ void Compound::_updateOverdraw( Wall& wall )
     Vector4i channelOverdraw( Vector4i::ZERO );
 
     // compute overdraw
-    if( overdraw.x() && viewVP.x < segmentVP.x )
-        channelOverdraw.x() = overdraw.x();
+    if( overdraw.x && viewVP.x < segmentVP.x )
+        channelOverdraw.x = overdraw.x;
 
-    if( overdraw.x() && viewVP.getXEnd() > segmentVP.getXEnd( ))
-        channelOverdraw.z() = overdraw.x();
+    if( overdraw.x && viewVP.getXEnd() > segmentVP.getXEnd( ))
+        channelOverdraw.z = overdraw.x;
 
-    if( overdraw.y() && viewVP.y < segmentVP.y )
-        channelOverdraw.y() = overdraw.y();
+    if( overdraw.y && viewVP.y < segmentVP.y )
+        channelOverdraw.y = overdraw.y;
 
-    if( overdraw.y() && viewVP.getYEnd() > segmentVP.getYEnd( ))
-        channelOverdraw.w() = overdraw.y();
+    if( overdraw.y && viewVP.getYEnd() > segmentVP.getYEnd( ))
+        channelOverdraw.w = overdraw.y;
 
     // clamp to max channel size
     const Vector2i& maxSize = channel->getMaxSize();
@@ -850,63 +853,63 @@ void Compound::_updateOverdraw( Wall& wall )
     {
         const PixelViewport& channelPVP = channel->getPixelViewport();
 
-        const int32_t xOverdraw = channelOverdraw.x() + channelOverdraw.z();
+        const int32_t xOverdraw = channelOverdraw.x + channelOverdraw.z;
         const int32_t xSize = xOverdraw + channelPVP.w;
-        if( xSize > maxSize.x( ))
+        if( xSize > maxSize.x )
         {
-            const uint32_t maxOverdraw = maxSize.x() - channelPVP.w;
+            const uint32_t maxOverdraw = maxSize.x - channelPVP.w;
             const float ratio = static_cast< float >( maxOverdraw ) /
                                 static_cast< float >( xOverdraw );
-            channelOverdraw.x() = static_cast< int >(
-                channelOverdraw.x() * ratio + .5f );
-            channelOverdraw.z() = maxOverdraw - channelOverdraw.x();
+            channelOverdraw.x = static_cast< int >(
+                channelOverdraw.x * ratio + .5f );
+            channelOverdraw.z = maxOverdraw - channelOverdraw.x;
         }
 
-        const int32_t yOverdraw = channelOverdraw.y() + channelOverdraw.w();
+        const int32_t yOverdraw = channelOverdraw.y + channelOverdraw.w;
         const int32_t ySize = yOverdraw + channelPVP.h;
-        if( ySize > maxSize.y( ))
+        if( ySize > maxSize.y )
         {
-            const uint32_t maxOverdraw = maxSize.y() - channelPVP.h;
+            const uint32_t maxOverdraw = maxSize.y - channelPVP.h;
             const float ratio = static_cast< float >( maxOverdraw ) /
                                 static_cast< float >( yOverdraw );
-            channelOverdraw.y() = static_cast< int >(
-                channelOverdraw.y() * ratio +.5f );
-            channelOverdraw.w() = maxOverdraw - channelOverdraw.y();
+            channelOverdraw.y = static_cast< int >(
+                channelOverdraw.y * ratio +.5f );
+            channelOverdraw.w = maxOverdraw - channelOverdraw.y;
         }
     }
 
     // apply to frustum
-    if( channelOverdraw.x() > 0 )
+    if( channelOverdraw.x > 0 )
     {
         const PixelViewport& pvp = channel->getPixelViewport();
-        const float ratio = static_cast<float>( pvp.w + channelOverdraw.x( )) /
+        const float ratio = static_cast<float>( pvp.w + channelOverdraw.x ) /
                             static_cast<float>( pvp.w );
         wall.resizeLeft( ratio );
     }
 
-    if( channelOverdraw.z() > 0 )
+    if( channelOverdraw.z > 0 )
     {
         const PixelViewport& pvp = channel->getPixelViewport();
-        const float ratio = static_cast<float>( pvp.w + channelOverdraw.x( ) +
-                                                channelOverdraw.z( )) /
-                            static_cast<float>( pvp.w + channelOverdraw.x( ));
+        const float ratio = static_cast<float>( pvp.w + channelOverdraw.x +
+                                                channelOverdraw.z ) /
+                            static_cast<float>( pvp.w + channelOverdraw.x );
         wall.resizeRight( ratio );
     }
 
-    if( channelOverdraw.y() > 0 )
+    if( channelOverdraw.y > 0 )
     {
         const PixelViewport& pvp = channel->getPixelViewport();
-        const float ratio = static_cast<float>( pvp.h + channelOverdraw.y( )) /
+        const float ratio = static_cast<float>( pvp.h + channelOverdraw.y ) /
                             static_cast<float>( pvp.h );
         wall.resizeBottom( ratio );
     }
 
-    if( channelOverdraw.w() > 0 )
+    if( channelOverdraw.w > 0 )
     {
         const PixelViewport& pvp = channel->getPixelViewport();
-        const float ratio = static_cast<float>( pvp.h + + channelOverdraw.y( ) +
-                                                channelOverdraw.w( )) /
-                            static_cast<float>( pvp.h + channelOverdraw.y( ));
+        const float ratio = static_cast<float>( pvp.h + + channelOverdraw.y +
+                                                channelOverdraw.w ) /
+                            static_cast<float>( pvp.h + channelOverdraw.y );
         wall.resizeTop( ratio );
     }
 
@@ -1234,7 +1237,8 @@ void Compound::updateInheritData( const uint32_t frameNumber )
 
         // update inherit zoom to be pixel-correct with the integer-rounded pvp
         const Zoom zoom = _inherit.pvp.getZoom( unzoomedPVP );
-        _inherit.zoom *= zoom;
+        _inherit.zoom.x *= zoom.x;
+        _inherit.zoom.y *= zoom.y;
     }
 
     // Tasks
@@ -1379,8 +1383,8 @@ void Compound::_updateInheritPVP()
 
     // enlarge pvp by overdraw
     const Vector4i& overdraw = channel->getOverdraw();
-    _inherit.pvp.w += overdraw.x() + overdraw.z();
-    _inherit.pvp.h += overdraw.y() + overdraw.w();
+    _inherit.pvp.w += overdraw.x + overdraw.z;
+    _inherit.pvp.h += overdraw.y + overdraw.w;
 
     if( oldPVP != _inherit.pvp ) // channel PVP changed
     {
@@ -1396,27 +1400,27 @@ void Compound::_updateInheritOverdraw()
     const PixelViewport& pvp = _inherit.pvp;
     const PixelViewport& parentPVP = _parent->_inherit.pvp;
 
-    _inherit.overdraw.x() -= pvp.x - parentPVP.x;
-    _inherit.overdraw.y() -= pvp.y - parentPVP.y;
-    _inherit.overdraw.z() -= parentPVP.getXEnd() - pvp.getXEnd();
-    _inherit.overdraw.w() -= parentPVP.getYEnd() - pvp.getYEnd();
+    _inherit.overdraw.x -= pvp.x - parentPVP.x;
+    _inherit.overdraw.y -= pvp.y - parentPVP.y;
+    _inherit.overdraw.z -= parentPVP.getXEnd() - pvp.getXEnd();
+    _inherit.overdraw.w -= parentPVP.getYEnd() - pvp.getYEnd();
 
-    _inherit.overdraw.x() = LB_MAX( _inherit.overdraw.x(), 0 );
-    _inherit.overdraw.y() = LB_MAX( _inherit.overdraw.y(), 0 );
-    _inherit.overdraw.z() = LB_MAX( _inherit.overdraw.z(), 0 );
-    _inherit.overdraw.w() = LB_MAX( _inherit.overdraw.w(), 0 );
+    _inherit.overdraw.x = LB_MAX( _inherit.overdraw.x, 0 );
+    _inherit.overdraw.y = LB_MAX( _inherit.overdraw.y, 0 );
+    _inherit.overdraw.z = LB_MAX( _inherit.overdraw.z, 0 );
+    _inherit.overdraw.w = LB_MAX( _inherit.overdraw.w, 0 );
 
-    _inherit.overdraw.x() = LB_MIN( _inherit.overdraw.x(), pvp.w );
-    _inherit.overdraw.y() = LB_MIN( _inherit.overdraw.y(), pvp.h );
-    _inherit.overdraw.z() = LB_MIN( _inherit.overdraw.z(), pvp.w );
-    _inherit.overdraw.w() = LB_MIN( _inherit.overdraw.w(), pvp.h );
+    _inherit.overdraw.x = LB_MIN( _inherit.overdraw.x, pvp.w );
+    _inherit.overdraw.y = LB_MIN( _inherit.overdraw.y, pvp.h );
+    _inherit.overdraw.z = LB_MIN( _inherit.overdraw.z, pvp.w );
+    _inherit.overdraw.w = LB_MIN( _inherit.overdraw.w, pvp.h );
 
-    LBASSERTINFO( pvp.w >= _inherit.overdraw.x() + _inherit.overdraw.z(),
+    LBASSERTINFO( pvp.w >= _inherit.overdraw.x + _inherit.overdraw.z,
                   pvp.w << " < " <<
-                  _inherit.overdraw.x() + _inherit.overdraw.z( ));
-    LBASSERTINFO( pvp.h >= _inherit.overdraw.y() + _inherit.overdraw.w(),
+                  _inherit.overdraw.x + _inherit.overdraw.z );
+    LBASSERTINFO( pvp.h >= _inherit.overdraw.y + _inherit.overdraw.w,
                   pvp.h << " < " <<
-                  _inherit.overdraw.y() + _inherit.overdraw.w( ));
+                  _inherit.overdraw.y + _inherit.overdraw.w );
 }
 
 void Compound::updateInheritTasks()

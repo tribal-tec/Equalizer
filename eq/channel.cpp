@@ -313,8 +313,8 @@ void Channel::frameClear( const uint128_t& )
     if( getenv( "EQ_TAINT_CHANNELS" ))
     {
         const Vector3ub color = getUniqueColor();
-        EQ_GL_CALL( glClearColor( color.r()/255.f, color.g()/255.f,
-                                  color.b()/255.f, 0.f ));
+        EQ_GL_CALL( glClearColor( color.r/255.f, color.g/255.f,
+                                  color.b/255.f, 0.f ));
     }
 #endif // NDEBUG
 
@@ -614,9 +614,9 @@ void Channel::applyPerspective() const
     const Vector2f jitter = getJitter();
 
     frustum.apply_jitter( jitter );
-    EQ_GL_CALL( glFrustum( frustum.left(), frustum.right(),
-                           frustum.bottom(), frustum.top(),
-                           frustum.near_plane(), frustum.far_plane() ));
+    EQ_GL_CALL( glFrustum( frustum.left, frustum.right,
+                           frustum.bottom, frustum.top,
+                           frustum.near, frustum.far ));
 }
 
 void Channel::applyOrtho() const
@@ -626,18 +626,18 @@ void Channel::applyOrtho() const
     const Vector2f jitter = getJitter();
 
     ortho.apply_jitter( jitter );
-    EQ_GL_CALL( glOrtho( ortho.left(), ortho.right(),
-                         ortho.bottom(), ortho.top(),
-                         ortho.near_plane(), ortho.far_plane() ));
+    EQ_GL_CALL( glOrtho( ortho.left, ortho.right,
+                         ortho.bottom, ortho.top,
+                         ortho.near, ortho.far ));
 }
 
 void Channel::applyScreenFrustum() const
 {
     LB_TS_THREAD( _pipeThread );
     const Frustumf frustum = getScreenFrustum();
-    EQ_GL_CALL( glOrtho( frustum.left(), frustum.right(),
-                         frustum.bottom(), frustum.top(),
-                         frustum.near_plane(), frustum.far_plane() ));
+    EQ_GL_CALL( glOrtho( frustum.left, frustum.right,
+                         frustum.bottom, frustum.top,
+                         frustum.near, frustum.far ));
 }
 
 void Channel::applyHeadTransform() const
@@ -653,14 +653,14 @@ void Channel::applyPerspectiveTransform() const
 {
     LB_TS_THREAD( _pipeThread );
     const Matrix4f& xfm = getPerspectiveTransform();
-    EQ_GL_CALL( glMultMatrixf( xfm.array ));
+    EQ_GL_CALL( glMultMatrixf( glm::value_ptr( xfm )));
 }
 
 void Channel::applyOrthoTransform() const
 {
     LB_TS_THREAD( _pipeThread );
     const Matrix4f& xfm = getOrthoTransform();
-    EQ_GL_CALL( glMultMatrixf( xfm.array ));
+    EQ_GL_CALL( glMultMatrixf( glm::value_ptr( xfm )));
 }
 
 void Channel::applyOverlayState()
@@ -742,15 +742,15 @@ Vector2f Channel::getJitter() const
     if( !table )
     {
         static lunchbox::RNG rng;
-        jitter.x() = rng.get< float >();
-        jitter.y() = rng.get< float >();
+        jitter.x = rng.get< float >();
+        jitter.y = rng.get< float >();
     }
     else
         jitter = table[ subpixel.index ];
 
     const Pixel& pixel = getPixel();
-    jitter.x() /= static_cast<float>( pixel.w );
-    jitter.y() /= static_cast<float>( pixel.h );
+    jitter.x /= static_cast<float>( pixel.w );
+    jitter.y /= static_cast<float>( pixel.h );
 
     return jitter * pixelSize;
 }
@@ -901,8 +901,8 @@ bool Channel::processEvent( const Event& event )
             configEvent.data.originator = viewID;
 
             ResizeEvent& resize = configEvent.data.resize;
-            resize.dw = resize.w / float( _impl->initialSize.x( ));
-            resize.dh = resize.h / float( _impl->initialSize.y( ));
+            resize.dw = resize.w / float( _impl->initialSize.x );
+            resize.dh = resize.h / float( _impl->initialSize.y );
             break;
         }
 
@@ -1623,8 +1623,8 @@ bool Channel::_cmdConfigInit( co::ICommand& cmd )
 
         const PixelViewport& pvp = getPixelViewport();
         LBASSERT( pvp.hasArea( ));
-        _impl->initialSize.x() = pvp.w;
-        _impl->initialSize.y() = pvp.h;
+        _impl->initialSize.x = pvp.w;
+        _impl->initialSize.y = pvp.h;
         _impl->finishedFrame = window->getCurrentFrame();
 
         result = configInit( command.read< uint128_t >( ));

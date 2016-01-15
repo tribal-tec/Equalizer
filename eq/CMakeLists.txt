@@ -241,25 +241,25 @@ if(WIN32)
     )
 endif()
 
-if(EQ_QT_USED)
-  qt5_wrap_cpp(QT_MOC_OUTFILES
-    qt/window.h
-    qt/windowFactory.h
-    qt/windowSystem.h
-    )
-  list(APPEND EQUALIZER_SOURCES
-    ${QT_MOC_OUTFILES}
-    qt/eventHandler.cpp
-    qt/messagePump.cpp
-    qt/pipe.cpp
-    qt/window.cpp
-    qt/windowImpl.h
-    qt/windowFactory.cpp
-    qt/windowSystem.cpp
-    )
-  list(APPEND EQUALIZER_LINK_LIBRARIES
-    Qt5::Core Qt5::Gui Qt5::Widgets)
-endif()
+#if(EQ_QT_USED)
+#  qt5_wrap_cpp(QT_MOC_OUTFILES
+#    qt/window.h
+#    qt/windowFactory.h
+#    qt/windowSystem.h
+#    )
+#  list(APPEND EQUALIZER_SOURCES
+#    ${QT_MOC_OUTFILES}
+#    qt/eventHandler.cpp
+#    qt/messagePump.cpp
+#    qt/pipe.cpp
+#    qt/window.cpp
+#    qt/windowImpl.h
+#    qt/windowFactory.cpp
+#    qt/windowSystem.cpp
+#    )
+#  list(APPEND EQUALIZER_LINK_LIBRARIES
+#    Qt5::Core Qt5::Gui Qt5::Widgets)
+#endif()
 
 if(OpenCV_FOUND)
   list(APPEND EQUALIZER_SOURCES detail/cvTracker.h detail/cvTracker.cpp)

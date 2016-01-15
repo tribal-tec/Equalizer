@@ -131,10 +131,10 @@ public:
         if( zoom == Zoom::NONE )
             return;
 
-        x = static_cast< int32_t >( x * zoom.x() + .5f );
-        y = static_cast< int32_t >( y * zoom.y() + .5f );
-        w = static_cast< int32_t >( w * zoom.x() + .5f );
-        h = static_cast< int32_t >( h * zoom.y() + .5f );
+        x = static_cast< int32_t >( x * zoom.x + .5f );
+        y = static_cast< int32_t >( y * zoom.y + .5f );
+        w = static_cast< int32_t >( w * zoom.x + .5f );
+        h = static_cast< int32_t >( h * zoom.y + .5f );
     }
 
     /**
@@ -182,7 +182,7 @@ public:
     /** @return the addition of this pvp with an offset. @version 1.0 */
     const PixelViewport operator + ( const Vector2i& offset ) const
     {
-        return PixelViewport( x+offset.x(), y+offset.y(), w, h );
+        return PixelViewport( x+offset.x, y+offset.y, w, h );
     }
 
     /** @internal
@@ -207,8 +207,8 @@ public:
     /** @return this pvp minus an offset. @version 1.3.0 */
     const PixelViewport& operator -= ( const Vector2i& offset )
     {
-        x -= offset.x();
-        y -= offset.y();
+        x -= offset.x;
+        y -= offset.y;
         return *this;
     }
 

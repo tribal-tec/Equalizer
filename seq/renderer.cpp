@@ -112,38 +112,37 @@ void Renderer::clear( co::Object* /*frameData*/ )
 void Renderer::updateNearFar( const Vector4f& boundingSphere )
 {
     const Matrix4f& view = getViewMatrix();
-    Matrix4f viewInv;
-    compute_inverse( view, viewInv );
+    const Matrix4f viewInv = glm::inverse( view );
 
-    const Vector3f& zero  = viewInv * Vector3f::ZERO;
-    Vector3f        front = viewInv * Vector3f( 0.0f, 0.0f, -1.0f );
+    const Vector3f& zero  = Vector3f( viewInv * Vector4f( Vector3f::ZERO, 1.f ));
+    Vector3f        front = Vector3f( viewInv * Vector4f( -Vector3f::Z, 1.f ));
     front -= zero;
-    front.normalize();
-    front *= boundingSphere.w();
+    front = glm::normalize( front );
+    front *= boundingSphere.w;
 
-    const Vector3f& translation = getModelMatrix().get_translation();
-    const Vector3f& center = translation - boundingSphere.get_sub_vector<3>();
-    const Vector3f& nearPoint  = view * ( center - front );
-    const Vector3f& farPoint   = view * ( center + front );
+    const Vector3f translation = Vector3f( getModelMatrix()[3] );
+    const Vector3f& center = translation - Vector3f( boundingSphere );
+    const Vector3f& nearPoint  = Vector3f( view * Vector4f( center - front, 1.f ));
+    const Vector3f& farPoint   = Vector3f( view * Vector4f( center + front, 1.f ));
 
     if( _impl->useOrtho( ))
     {
-        LBASSERTINFO( fabs( farPoint.z() - nearPoint.z() ) >
+        LBASSERTINFO( fabs( farPoint.z - nearPoint.z ) >
                       std::numeric_limits< float >::epsilon(),
                       nearPoint << " == " << farPoint );
-        setNearFar( -nearPoint.z(), -farPoint.z() );
+        setNearFar( -nearPoint.z, -farPoint.z );
     }
     else
     {
         // estimate minimal value of near plane based on frustum size
         const eq::Frustumf& frustum = _impl->getFrustum();
-        const float width  = fabs( frustum.right() - frustum.left() );
-        const float height = fabs( frustum.top() - frustum.bottom() );
+        const float width  = fabs( frustum.right - frustum.left );
+        const float height = fabs( frustum.top - frustum.bottom );
         const float size   = LB_MIN( width, height );
-        const float minNear = frustum.near_plane() / size * .001f;
+        const float minNear = frustum.near / size * .001f;
 
-        const float zNear = LB_MAX( minNear, -nearPoint.z() );
-        const float zFar  = LB_MAX( zNear * 2.f, -farPoint.z() );
+        const float zNear = LB_MAX( minNear, -nearPoint.z );
+        const float zFar  = LB_MAX( zNear * 2.f, -farPoint.z );
 
         setNearFar( zNear, zFar );
     }

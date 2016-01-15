@@ -116,10 +116,10 @@ void Wall::resizeBottom( const float ratio )
 
 void Wall::resizeHorizontalToAR( const float aspectRatio )
 {
-    const Vector3f u_2   = (bottomRight - bottomLeft) * .5f;
-    const Vector3f v_2   = (topLeft - bottomLeft) * .5f;
+    const Vector3f u_2 = (bottomRight - bottomLeft) * .5f;
+    const Vector3f v_2 = (topLeft - bottomLeft) * .5f;
 
-    const float currentAR = u_2.length() / v_2.length();
+    const float currentAR = glm::length( u_2 ) / glm::length( v_2 );
     const float ratio = aspectRatio / currentAR;
 
     // Same as resizeHorizontal, but C&P since we have u_2 already
@@ -183,25 +183,26 @@ Wall& Wall::operator = ( const Projection& projection )
     const float cosR = cos(DEG2RAD( projection.hpr[2] ));
     const float sinR = sin(DEG2RAD( projection.hpr[2] ));
 
-    Matrix3f  mat ;
+    Matrix3f mat;
     const float cosPsinH = cosP * sinH;
     const float sinPsinH = sinP * sinH;
 
-    mat.array[0] =  cosH * cosR;
-    mat.array[1] = -cosH * sinR;
-    mat.array[2] = -sinH;
-    mat.array[3] = -sinPsinH * cosR + cosP * sinR;
-    mat.array[4] =  sinPsinH * sinR + cosP * cosR;
-    mat.array[5] = -sinP * cosH;
-    mat.array[6] =  cosPsinH * cosR + sinP * sinR;
-    mat.array[7] = -cosPsinH * sinR + sinP * cosR;
-    mat.array[8] =  cosP * cosH;
+    float* array = glm::value_ptr( mat );
+    array[0] =  cosH * cosR;
+    array[1] = -cosH * sinR;
+    array[2] = -sinH;
+    array[3] = -sinPsinH * cosR + cosP * sinR;
+    array[4] =  sinPsinH * sinR + cosP * cosR;
+    array[5] = -sinP * cosH;
+    array[6] =  cosPsinH * cosR + sinP * sinR;
+    array[7] = -cosPsinH * sinR + sinP * cosR;
+    array[8] =  cosP * cosH;
 
     bottomLeft  = mat * bottomLeft;
     bottomRight = mat * bottomRight;
     topLeft     = mat * topLeft;
 
-    Vector3f w( mat.array[6], mat.array[7], mat.array[8] );
+    Vector3f w( array[6], array[7], array[8] );
 
     bottomLeft  = bottomLeft  + projection.origin  + w *  projection.distance;
     bottomRight = bottomRight + projection.origin  + w *  projection.distance;
@@ -212,24 +213,24 @@ Wall& Wall::operator = ( const Projection& projection )
 
 Wall& Wall::operator = ( const Matrix4f& xfm )
 {
-    bottomLeft  = xfm * Vector4f( -1.0f, -1.0f, -1.0f, 1.0f );
-    bottomRight = xfm * Vector4f(  1.0f, -1.0f, -1.0f, 1.0f );
-    topLeft     = xfm * Vector4f( -1.0f,  1.0f, -1.0f, 1.0f );
+    bottomLeft  = Vector3f( xfm * Vector4f( -1.0f, -1.0f, -1.0f, 1.0f ));
+    bottomRight = Vector3f( xfm * Vector4f(  1.0f, -1.0f, -1.0f, 1.0f ));
+    topLeft     = Vector3f( xfm * Vector4f( -1.0f,  1.0f, -1.0f, 1.0f ));
     return *this;
 }
 
 bool Wall::operator == ( const Wall& rhs ) const
 {
-    return ( bottomLeft.equals( rhs.bottomLeft, 0.0001f )   &&
-             bottomRight.equals( rhs.bottomRight, 0.0001f ) &&
-             topLeft.equals( rhs.topLeft, 0.0001f ));
+    return ( glm::all( glm::epsilonEqual( bottomLeft, rhs.bottomLeft, 0.0001f )) &&
+             glm::all( glm::epsilonEqual( bottomRight, rhs.bottomRight, 0.0001f )) &&
+             glm::all( glm::epsilonEqual( topLeft, rhs.topLeft, 0.0001f )));
 }
 
 bool Wall::operator != ( const Wall& rhs ) const
 {
-    return ( !bottomLeft.equals( rhs.bottomLeft, 0.0001f )   ||
-             !bottomRight.equals( rhs.bottomRight, 0.0001f ) ||
-             !topLeft.equals( rhs.topLeft, 0.0001f ));
+    return ( glm::all( glm::epsilonNotEqual( bottomLeft, rhs.bottomLeft, 0.0001f )) ||
+             glm::all( glm::epsilonNotEqual( bottomRight, rhs.bottomRight, 0.0001f )) ||
+             glm::all( glm::epsilonNotEqual( topLeft, rhs.topLeft, 0.0001f )));
 }
 
 std::ostream& operator << ( std::ostream& os, const Wall& wall )

@@ -158,7 +158,7 @@ float Equalizer::getFrameRate() const
 
 void Equalizer::setBoundary( const Vector2i& boundary )
 {
-    LBASSERT( boundary.x() > 0 && boundary.y() > 0 );
+    LBASSERT( boundary.x > 0 && boundary.y > 0 );
     _data->boundary2i = boundary;
 }
 

@@ -787,8 +787,8 @@ void Compositor::_mergeDBImage( void* destColor, void* destDepth,
 
     const PixelViewport&  pvp    = image->getPixelViewport();
 
-    const int32_t         destX  = offset.x() + pvp.x - destPVP.x;
-    const int32_t         destY  = offset.y() + pvp.y - destPVP.y;
+    const int32_t         destX  = offset.x + pvp.x - destPVP.x;
+    const int32_t         destY  = offset.y + pvp.y - destPVP.y;
 
     const uint32_t* color = reinterpret_cast< const uint32_t* >
         ( image->getPixelPointer( Frame::BUFFER_COLOR ));
@@ -832,8 +832,8 @@ void Compositor::_merge2DImage( void* destColor, void* destDepth,
     uint8_t* destD = reinterpret_cast< uint8_t* >( destDepth );
 
     const PixelViewport&  pvp    = image->getPixelViewport();
-    const int32_t         destX  = offset.x() + pvp.x - destPVP.x;
-    const int32_t         destY  = offset.y() + pvp.y - destPVP.y;
+    const int32_t         destX  = offset.x + pvp.x - destPVP.x;
+    const int32_t         destY  = offset.y + pvp.y - destPVP.y;
 
     LBASSERT( image->hasPixelData( Frame::BUFFER_COLOR ));
 
@@ -862,8 +862,8 @@ void Compositor::_mergeBlendImage( void* dest, const eq::PixelViewport& destPVP,
     int32_t* destColor = reinterpret_cast< int32_t* >( dest );
 
     const PixelViewport&  pvp    = image->getPixelViewport();
-    const int32_t         destX  = offset.x() + pvp.x - destPVP.x;
-    const int32_t         destY  = offset.y() + pvp.y - destPVP.y;
+    const int32_t         destX  = offset.x + pvp.x - destPVP.x;
+    const int32_t         destY  = offset.y + pvp.y - destPVP.y;
 
     LBASSERT( image->getPixelSize( Frame::BUFFER_COLOR ) == 4 );
     LBASSERT( image->hasPixelData( Frame::BUFFER_COLOR ));
@@ -1001,10 +1001,10 @@ void Compositor::setupStencilBuffer( const Image* image, const ImageOp& op )
         const float width  = float( pvp.w * op.pixel.w );
         const float step   = float( op.pixel.w );
 
-        const float startX = float( op.offset.x() + pvp.x ) + 0.5f -
+        const float startX = float( op.offset.x + pvp.x ) + 0.5f -
                              float( op.pixel.w );
         const float endX   = startX + width + op.pixel.w + step;
-        const float startY = float( op.offset.y() + pvp.y + op.pixel.y );
+        const float startY = float( op.offset.y + pvp.y + op.pixel.y );
         const float endY   = float( startY + pvp.h*op.pixel.h );
 
         glBegin( GL_QUADS );
@@ -1021,9 +1021,9 @@ void Compositor::setupStencilBuffer( const Image* image, const ImageOp& op )
     {
         const float height = float( pvp.h * op.pixel.h );
         const float step   = float( op.pixel.h );
-        const float startX = float( op.offset.x() + pvp.x + op.pixel.x );
+        const float startX = float( op.offset.x + pvp.x + op.pixel.x );
         const float endX   = float( startX + pvp.w * op.pixel.w );
-        const float startY = float( op.offset.y() + pvp.y ) + 0.5f -
+        const float startY = float( op.offset.y + pvp.y ) + 0.5f -
                              float( op.pixel.h );
         const float endY   = startY + height + op.pixel.h + step;
 
@@ -1192,10 +1192,10 @@ bool Compositor::_setupDrawPixels( const Image* image, const ImageOp& op,
 Vector4f Compositor::_getCoords( const ImageOp& op, const PixelViewport& pvp )
 {
     return Vector4f(
-        op.offset.x() + pvp.x * op.pixel.w + op.pixel.x,
-        op.offset.x() + pvp.getXEnd() * op.pixel.w*op.zoom.x() + op.pixel.x,
-        op.offset.y() + pvp.y * op.pixel.h + op.pixel.y,
-        op.offset.y() + pvp.getYEnd() * op.pixel.h*op.zoom.y() + op.pixel.y );
+        op.offset.x + pvp.x * op.pixel.w + op.pixel.x,
+        op.offset.x + pvp.getXEnd() * op.pixel.w*op.zoom.x + op.pixel.x,
+        op.offset.y + pvp.y * op.pixel.h + op.pixel.y,
+        op.offset.y + pvp.getYEnd() * op.pixel.h*op.zoom.y + op.pixel.y );
 }
 
 template< typename T >
@@ -1281,13 +1281,15 @@ void Compositor::_drawTexturedQuad( const T* key, const ImageOp& op,
     };
 
     eq::Frustumf frustum;
-    frustum.left() = channel->getPixelViewport().x;
-    frustum.right() = channel->getPixelViewport().getXEnd();
-    frustum.bottom() = channel->getPixelViewport().y;
-    frustum.top() = channel->getPixelViewport().getYEnd();
-    frustum.far_plane() = 1.0f;
-    frustum.near_plane() = -1.0f;
-    const eq::Matrix4f& proj = frustum.compute_ortho_matrix();
+    frustum.left = channel->getPixelViewport().x;
+    frustum.right = channel->getPixelViewport().getXEnd();
+    frustum.bottom = channel->getPixelViewport().y;
+    frustum.top = channel->getPixelViewport().getYEnd();
+    frustum.far = 1.0f;
+    frustum.near = -1.0f;
+    const eq::Matrix4f& proj = glm::ortho( frustum.left, frustum.right,
+                                           frustum.bottom, frustum.top,
+                                           frustum.left, frustum.right );
 
     if( withDepth )
         EQ_GL_CALL( glEnable( GL_DEPTH_TEST ));
@@ -1296,7 +1298,7 @@ void Compositor::_drawTexturedQuad( const T* key, const ImageOp& op,
     EQ_GL_CALL( glUseProgram( program ));
 
     const GLuint projection = glGetUniformLocation( program, "proj" );
-    EQ_GL_CALL( glUniformMatrix4fv( projection, 1, GL_FALSE, &proj[0] ));
+    EQ_GL_CALL( glUniformMatrix4fv( projection, 1, GL_FALSE, glm::value_ptr( proj )));
 
     EQ_GL_CALL( glBindBuffer( GL_ARRAY_BUFFER, vertexBuffer ));
     EQ_GL_CALL( glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices,
@@ -1341,7 +1343,7 @@ void Compositor::assembleImageDB_FF( const Image* image, const ImageOp& op )
                           << std::endl;
 
     // Z-Based sort-last assembly
-    EQ_GL_CALL( glRasterPos2i( op.offset.x() + pvp.x, op.offset.y() + pvp.y ));
+    EQ_GL_CALL( glRasterPos2i( op.offset.x + pvp.x, op.offset.y + pvp.y ));
     EQ_GL_CALL( glEnable( GL_STENCIL_TEST ));
 
     // test who is in front and mark in stencil buffer

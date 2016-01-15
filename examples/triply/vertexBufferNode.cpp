@@ -105,19 +105,18 @@ const BoundingSphere& VertexBufferNode::updateBoundingSphere()
     const BoundingSphere& sphere2 = _right->updateBoundingSphere();
 
     // compute enclosing sphere
-    const Vertex center1( sphere1.array );
-    const Vertex center2( sphere2.array );
-    Vertex c1ToC2     = center2 - center1;
-    c1ToC2.normalize();
+    const Vertex center1( sphere1 );
+    const Vertex center2( sphere2 );
+    Vertex c1ToC2     = glm::normalize( center2 - center1 );
 
-    const Vertex outer1 = center1 - c1ToC2 * sphere1.w();
-    const Vertex outer2 = center2 + c1ToC2 * sphere2.w();
+    const Vertex outer1 = center1 - c1ToC2 * sphere1.w;
+    const Vertex outer2 = center2 + c1ToC2 * sphere2.w;
 
     Vertex vertexBoundingSphere = Vertex( outer1 + outer2 ) * 0.5f;
-    _boundingSphere.x() = vertexBoundingSphere.x();
-    _boundingSphere.y() = vertexBoundingSphere.y();
-    _boundingSphere.z() = vertexBoundingSphere.z();
-    _boundingSphere.w() = Vertex( outer1 - outer2 ).length() * 0.5f;
+    _boundingSphere.x = vertexBoundingSphere.x;
+    _boundingSphere.y = vertexBoundingSphere.y;
+    _boundingSphere.z = vertexBoundingSphere.z;
+    _boundingSphere.w = glm::length( Vertex( outer1 - outer2 )) * 0.5f;
     return _boundingSphere;
 }
 

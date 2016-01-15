@@ -175,8 +175,8 @@ void FrameData::spinCamera( const float x, const float y )
     if( x == 0.f && y == 0.f )
         return;
 
-    _rotation.pre_rotate_x( x );
-    _rotation.pre_rotate_y( y );
+//    _rotation.pre_rotate_x( x );
+//    _rotation.pre_rotate_y( y );
     setDirty( DIRTY_CAMERA );
 }
 
@@ -185,9 +185,9 @@ void FrameData::spinModel( const float x, const float y, const float z )
     if( x == 0.f && y == 0.f && z == 0.f )
         return;
 
-    _modelRotation.pre_rotate_x( x );
-    _modelRotation.pre_rotate_y( y );
-    _modelRotation.pre_rotate_z( z );
+//    _modelRotation.pre_rotate_x( x );
+//    _modelRotation.pre_rotate_y( y );
+//    _modelRotation.pre_rotate_z( z );
     setDirty( DIRTY_CAMERA );
 }
 
@@ -195,17 +195,18 @@ void FrameData::moveCamera( const float x, const float y, const float z )
 {
     if( _pilotMode )
     {
-        eq::Matrix4f matInverse;
-        compute_inverse( _rotation, matInverse );
+        const eq::Matrix4f matInverse = glm::inverse( _rotation );
         eq::Vector4f shift = matInverse * eq::Vector4f( x, y, z, 1 );
 
-        _position += shift;
+        _position.x += shift.x;
+        _position.y += shift.y;
+        _position.z += shift.z;
     }
     else
     {
-        _position.x() += x;
-        _position.y() += y;
-        _position.z() += z;
+        _position.x += x;
+        _position.y += y;
+        _position.z += z;
     }
 
     setDirty( DIRTY_CAMERA );
@@ -220,36 +221,36 @@ void FrameData::setCameraPosition( const eq::Vector3f& position )
 void FrameData::setRotation( const eq::Vector3f& rotation )
 {
     _rotation = eq::Matrix4f::IDENTITY;
-    _rotation.rotate_x( rotation.x() );
-    _rotation.rotate_y( rotation.y() );
-    _rotation.rotate_z( rotation.z() );
+    _rotation = glm::rotate( _rotation, rotation.x, eq::Vector3f::X );
+    _rotation = glm::rotate( _rotation, rotation.y, eq::Vector3f::Y );
+    _rotation = glm::rotate( _rotation, rotation.z, eq::Vector3f::Z );
     setDirty( DIRTY_CAMERA );
 }
 
 void FrameData::setModelRotation(  const eq::Vector3f& rotation )
 {
     _modelRotation = eq::Matrix4f::IDENTITY;
-    _modelRotation.rotate_x( rotation.x() );
-    _modelRotation.rotate_y( rotation.y() );
-    _modelRotation.rotate_z( rotation.z() );
+    _modelRotation = glm::rotate( _modelRotation, rotation.x, eq::Vector3f::X );
+    _modelRotation = glm::rotate( _modelRotation, rotation.y, eq::Vector3f::Y );
+    _modelRotation = glm::rotate( _modelRotation, rotation.z, eq::Vector3f::Z );
     setDirty( DIRTY_CAMERA );
 }
 
 void FrameData::reset()
 {
     eq::Matrix4f model = eq::Matrix4f::IDENTITY;
-    model.rotate_x( static_cast<float>( -M_PI_2 ));
-    model.rotate_y( static_cast<float>( -M_PI_2 ));
+//    model.rotate_x( static_cast<float>( -M_PI_2 ));
+//    model.rotate_y( static_cast<float>( -M_PI_2 ));
 
     if( _position == eq::Vector3f( 0.f, 0.f, -2.f ) &&
         _rotation == eq::Matrix4f::IDENTITY && _modelRotation == model )
     {
-        _position.z() = 0.f;
+        _position.z = 0.f;
     }
     else
     {
         _position   = eq::Vector3f::ZERO;
-        _position.z() = -2.f;
+        _position.z = -2.f;
         _rotation      = eq::Matrix4f::IDENTITY;
         _modelRotation = model;
     }

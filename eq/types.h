@@ -240,9 +240,6 @@ using fabric::Strings;      //!< A vector of std::strings
 using fabric::StringsCIter; //!< A const_iterator over a std::string vector
 using fabric::Viewports;    //!< A vector of eq::Viewport
 
-/** Frustum culling helper */
-typedef vmml::frustum_culler< float >  FrustumCullerf;
-
 /** A vector of bytes */
 typedef std::vector< uint8_t >    Vectorub;
 /** A vector of unsigned shorts */

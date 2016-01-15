@@ -120,12 +120,12 @@ void CompoundUpdateInputVisitor::_updateFrames( Compound* compound )
             PixelViewport framePVP( inheritPVP );
 
             framePVP.apply( frameVP );
-            frameOffset.x() -= framePVP.x;
-            frameOffset.y() -= framePVP.y;
+            frameOffset.x -= framePVP.x;
+            frameOffset.y -= framePVP.y;
 
             const PixelViewport& iChannelPVP = iChannel->getPixelViewport();
-            frameOffset.x() -= iChannelPVP.x;
-            frameOffset.y() -= iChannelPVP.y;
+            frameOffset.x -= iChannelPVP.x;
+            frameOffset.y -= iChannelPVP.y;
         }
         frame->setOffset( frameOffset );
 
@@ -169,7 +169,8 @@ void CompoundUpdateInputVisitor::_updateZoom( const Compound* compound,
 
     // Zoom difference between output and input
     const FrameData* frameData = outputFrame->getMasterData();
-    zoom /= frameData->getZoom();
+    zoom.x /= frameData->getZoom().x;
+    zoom.y /= frameData->getZoom().y;
 
     frame->setZoom( zoom );
 }

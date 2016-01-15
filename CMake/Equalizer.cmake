@@ -4,7 +4,7 @@ set(EQUALIZER_PACKAGE_VERSION 1.8)
 set(EQUALIZER_REPO_URL https://github.com/Eyescale/Equalizer.git)
 
 set(EQUALIZER_DEPENDS
-  REQUIRED vmmlib Lunchbox Collage OpenGL Boost Pression
+  REQUIRED glm Lunchbox Collage OpenGL Boost Pression
   OPTIONAL X11 hwsd GLStats hwloc OpenSceneGraph OpenCV VRPN
            Deflect MAGELLAN GLEW_MX Qt5Core Qt5OpenGL Qt5Widgets)
 set(EQUALIZER_BOOST_COMPONENTS "program_options filesystem system thread")

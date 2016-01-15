@@ -413,24 +413,23 @@ float View::_computeFocusRatio( Vector3f& eye )
     if( channels.empty( ))
         return 1.f;
 
-    Vector4f view4( Vector3f::FORWARD );
+    Vector4f view4( -Vector3f::Z, 1.0f );
     if( mode == FOCUSMODE_RELATIVE_TO_OBSERVER )
     {
         view4 = observer->getHeadMatrix() * view4;
         eye = observer->getEyeWorld( EYE_CYCLOP );
     }
-    Vector3f view = view4;
-    view.normalize();
+    const Vector3f view = glm::normalize( Vector3f( view4 ));
 
     float distance = std::numeric_limits< float >::max();
     if( getCurrentType() != Frustum::TYPE_NONE ) // frustum from view
     {
         const Wall& wall = getWall();
         const Vector3f w = wall.getW();
-        const float denom = view.dot( w );
+        const float denom = glm::dot( view, w );
         if( denom != 0.f ) // view parallel to wall
         {
-            const float d = (wall.bottomLeft - eye).dot( w ) / denom;
+            const float d = glm::dot( wall.bottomLeft - eye, w ) / denom;
             if( d > 0.f )
                 distance = d;
         }
@@ -448,11 +447,11 @@ float View::_computeFocusRatio( Vector3f& eye )
             // http://en.wikipedia.org/wiki/Line-plane_intersection
             const Wall& wall = segment->getWall();
             const Vector3f w = wall.getW();
-            const float denom = view.dot( w );
+            const float denom = glm::dot( view, w );
             if( denom == 0.f ) // view parallel to wall
                 continue;
 
-            const float d = (wall.bottomLeft - eye).dot( w ) / denom;
+            const float d = glm::dot( wall.bottomLeft - eye, w ) / denom;
             if( d > distance || d <= 0.f ) // further away or behind
                 continue;
 
@@ -469,8 +468,8 @@ float View::_computeFocusRatio( Vector3f& eye )
 
         if( distance != std::numeric_limits< float >::max( ))
         {
-            distance += eye.z();
-            focusDistance += eye.z();
+            distance += eye.z;
+            focusDistance += eye.z;
             if( fabsf( distance ) <= std::numeric_limits< float >::epsilon( ))
                 distance = 2.f * std::numeric_limits< float >::epsilon();
         }

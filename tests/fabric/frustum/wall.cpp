@@ -57,10 +57,11 @@ int main( int, char** )
     const Wall wall2( Vector3f( -.8f, -.5f, -1.f ),
                       Vector3f(  .8f, -.5f, -1.f ),
                       Vector3f( -.8f,  .5f, -1.f ));
-    Matrix4f inv;
+    target = glm::inverse(
+                glm::frustum( frustum.left, frustum.right,
+                              frustum.bottom, frustum.top,
+                              frustum.near, frustum.far ));
 
-    TEST( frustum.compute_matrix().inverse( inv ));
-    target = inv;
     TESTINFO( wall2 == target, wall2 << " != " << target );
 
     return EXIT_SUCCESS;

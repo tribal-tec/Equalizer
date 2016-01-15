@@ -53,9 +53,9 @@ public:
         , _updateFrameBuffer( false )
     {
         lunchbox::RNG rng;
-        color.r() = rng.get< uint8_t >();
-        color.g() = rng.get< uint8_t >();
-        color.b() = rng.get< uint8_t >();
+        color.r = rng.get< uint8_t >();
+        color.g = rng.get< uint8_t >();
+        color.b = rng.get< uint8_t >();
     }
 
     ~Channel()

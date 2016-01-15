@@ -137,10 +137,10 @@ namespace fabric
         EQFABRIC_API Wall& operator = ( const Matrix4f& xfm );
 
         /** @return the width of the wall. @version 1.0 */
-        float getWidth() const { return (bottomRight - bottomLeft).length(); }
+        float getWidth() const { return glm::length(bottomRight - bottomLeft); }
 
         /** @return the height of the wall. @version 1.0 */
-        float getHeight() const { return (topLeft - bottomLeft).length(); }
+        float getHeight() const { return glm::length(topLeft - bottomLeft); }
 
         /** @return true if the two walls are identical. @version 1.0 */
         EQFABRIC_API bool operator == ( const Wall& rhs ) const;
@@ -155,7 +155,7 @@ namespace fabric
         Vector3f getV() const { return topLeft - bottomLeft; }
 
         /** @return the perpendicular vector. @version 1.1 */
-        Vector3f getW() const { return getU().cross( getV( )); }
+        Vector3f getW() const { return glm::cross( getU(), getV( )); }
 
         Vector3f bottomLeft;  //!< The bottom-left corner
         Vector3f bottomRight; //!< The bottom-right corner

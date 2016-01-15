@@ -187,11 +187,11 @@ void CompoundUpdateOutputVisitor::_generateTiles( TileQueue* queue,
     if( !pvp.hasArea( ))
         return;
 
-    const Vector2i dim( pvp.w / tileSize.x() + ((pvp.w%tileSize.x()) ? 1 : 0),
-                        pvp.h / tileSize.y() + ((pvp.h%tileSize.y()) ? 1 : 0));
+    const Vector2i dim( pvp.w / tileSize.x + ((pvp.w%tileSize.x) ? 1 : 0),
+                        pvp.h / tileSize.y + ((pvp.h%tileSize.y) ? 1 : 0));
 
     std::vector< Vector2i > tiles;
-    tiles.reserve( dim.x() * dim.y() );
+    tiles.reserve( dim.x * dim.y );
 
     tiles::generateZigzag( tiles, dim );
     _addTilesToQueue( queue, compound, tiles );
@@ -211,13 +211,13 @@ void CompoundUpdateOutputVisitor::_addTilesToQueue( TileQueue* queue,
          i != tiles.end(); ++i )
     {
         const Vector2i& tile = *i;
-        PixelViewport tilePVP( tile.x() * tileSize.x(), tile.y() * tileSize.y(),
-                               tileSize.x(), tileSize.y( ));
+        PixelViewport tilePVP( tile.x * tileSize.x, tile.y * tileSize.y,
+                               tileSize.x, tileSize.y );
 
-        if ( tilePVP.x + tileSize.x() > pvp.w ) // no full tile
+        if ( tilePVP.x + tileSize.x > pvp.w ) // no full tile
             tilePVP.w = pvp.w - tilePVP.x;
 
-        if ( tilePVP.y + tileSize.y() > pvp.h ) // no full tile
+        if ( tilePVP.y + tileSize.y > pvp.h ) // no full tile
             tilePVP.h = pvp.h - tilePVP.y;
 
         const Viewport tileVP( tilePVP.x * xFraction, tilePVP.y * yFraction,
@@ -252,13 +252,13 @@ void CompoundUpdateOutputVisitor::_updateZoom( const Compound* compound,
     {
         zoom_1 = compound->getInheritZoom();
         LBASSERT( zoom_1.isValid( ));
-        zoom.x() = 1.0f / zoom_1.x();
-        zoom.y() = 1.0f / zoom_1.y();
+        zoom.x = 1.0f / zoom_1.x;
+        zoom.y = 1.0f / zoom_1.y;
     }
     else
     {
-        zoom_1.x() = 1.0f / zoom.x();
-        zoom_1.y() = 1.0f / zoom.y();
+        zoom_1.x = 1.0f / zoom.x;
+        zoom_1.y = 1.0f / zoom.y;
     }
 
     if( frame->getType( ) == Frame::TYPE_TEXTURE )
@@ -272,15 +272,15 @@ void CompoundUpdateOutputVisitor::_updateZoom( const Compound* compound,
         Zoom inputZoom;
         /* Output frames downscale pixel data during readback, and upscale it on
          * the input frame by setting the input frame's inherit zoom. */
-        if( zoom.x() > 1.0f )
+        if( zoom.x > 1.0f )
         {
-            inputZoom.x() = zoom_1.x();
-            zoom.x()      = 1.f;
+            inputZoom.x = zoom_1.x;
+            zoom.x      = 1.f;
         }
-        if( zoom.y() > 1.0f )
+        if( zoom.y > 1.0f )
         {
-            inputZoom.y() = zoom_1.y();
-            zoom.y()      = 1.f;
+            inputZoom.y = zoom_1.y;
+            zoom.y      = 1.f;
         }
 
         FrameData* frameData = frame->getMasterData();

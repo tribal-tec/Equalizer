@@ -29,9 +29,9 @@
 
 #include "vertexBufferState.h"
 
-namespace triply 
+namespace triply
 {
-VertexBufferState::VertexBufferState( const GLEWContext* glewContext ) 
+VertexBufferState::VertexBufferState( const GLEWContext* glewContext )
         : _pmvMatrix( Matrix4f::IDENTITY )
         , _glewContext( glewContext )
         , _renderMode( RENDER_MODE_DISPLAY_LIST )
@@ -42,10 +42,10 @@ VertexBufferState::VertexBufferState( const GLEWContext* glewContext )
     _range[1] = 1.f;
     resetRegion();
     PLYLIBASSERT( glewContext );
-} 
+}
 
-void VertexBufferState::setRenderMode( const RenderMode mode ) 
-{ 
+void VertexBufferState::setRenderMode( const RenderMode mode )
+{
     if( _renderMode == mode )
         return;
 
@@ -85,7 +85,7 @@ void VertexBufferState::updateRegion( const BoundingBox& box )
 
     for( size_t i = 0; i < 8; ++i )
     {
-        const Vertex corner = _pmvMatrix * corners[i];
+        const Vertex corner = Vertex( _pmvMatrix * Vector4f( corners[i], 1.0f ));
         region[0] = std::min( corner[0], region[0] );
         region[1] = std::min( corner[1], region[1] );
         region[2] = std::max( corner[0], region[2] );
@@ -119,20 +119,20 @@ GLuint VertexBufferStateSimple::getDisplayList( const void* key )
         return INVALID;
     return _displayLists[key];
 }
-        
+
 GLuint VertexBufferStateSimple::newDisplayList( const void* key )
 {
     _displayLists[key] = glGenLists( 1 );
     return _displayLists[key];
 }
-        
+
 GLuint VertexBufferStateSimple::getBufferObject( const void* key )
 {
     if( _bufferObjects.find( key ) == _bufferObjects.end() )
         return INVALID;
     return _bufferObjects[key];
 }
-        
+
 GLuint VertexBufferStateSimple::newBufferObject( const void* key )
 {
     if( !GLEW_VERSION_1_5 )
@@ -140,7 +140,7 @@ GLuint VertexBufferStateSimple::newBufferObject( const void* key )
     glGenBuffers( 1, &_bufferObjects[key] );
     return _bufferObjects[key];
 }
-        
+
 void VertexBufferStateSimple::deleteAll()
 {
     for( GLMapCIter i = _displayLists.begin(); i != _displayLists.end(); ++i )

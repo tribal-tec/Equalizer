@@ -63,7 +63,7 @@ void Observer::deserialize( co::DataIStream& is, const uint64_t dirtyBits )
         _updateViews();
     }
     if( dirtyBits & DIRTY_HEAD )
-        getHeadMatrix().inverse( _inverseHeadMatrix );
+        _inverseHeadMatrix = glm::inverse( getHeadMatrix( ));
 }
 
 ServerPtr Observer::getServer()
@@ -91,14 +91,14 @@ void Observer::init()
 {
     _updateEyes();
     _updateViews();
-    getHeadMatrix().inverse( _inverseHeadMatrix );
+    _inverseHeadMatrix = glm::inverse( getHeadMatrix( ));
 }
 
 void Observer::_updateEyes()
 {
     const Matrix4f& head = getHeadMatrix();
     for( size_t i = 0; i < NUM_EYES; ++i )
-        _eyeWorld[ i ] = head * getEyePosition( Eye( 1 << i ));
+        _eyeWorld[ i ] = Vector3f( head * Vector4f( getEyePosition( Eye( 1 << i )), 1.f ));
 
     LBVERB << "Eye position: " << _eyeWorld[ fabric::EYE_CYCLOP_BIT ]
            << std::endl;

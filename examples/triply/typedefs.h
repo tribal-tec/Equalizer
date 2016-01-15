@@ -46,7 +46,10 @@
 #  define PLYLIBINFO    LBINFO
 #else
 #  include <GL/glew.h>
-#  include <vmmlib/vmmlib.hpp>
+#  define GLM_FORCE_SIZE_FUNC
+#  define GLM_SWIZZLE
+#  define GLM_STATIC_CONST_MEMBERS
+#  include <glm/glm.hpp>
 #  ifdef _WIN32
 #    include <Winsock2.h>
 #    include <Windows.h>
@@ -79,13 +82,13 @@ class VertexBufferState;
 class VertexData;
 
 // basic type definitions
-typedef vmml::vector< 3, float >      Vertex;
-typedef vmml::vector< 3, uint8_t >    Color;
-typedef vmml::vector< 3, float >      Normal;
-typedef vmml::matrix< 4, 4, float >   Matrix4f;
-typedef vmml::vector< 4, float >      Vector4f;
-typedef size_t                        Index;
-typedef unsigned short                ShortIndex;
+typedef glm::tvec3< float >   Vertex;
+typedef glm::tvec3< uint8_t > Color;
+typedef glm::tvec3< float >   Normal;
+typedef glm::tmat4x4< float > Matrix4f;
+typedef glm::tvec4< float >   Vector4f;
+typedef size_t                Index;
+typedef unsigned short        ShortIndex;
 
 // mesh exception
 struct MeshException : public std::exception
@@ -122,9 +125,9 @@ private:
 
 
 // compound type definitions
-typedef vmml::vector< 3, Index >    Triangle;
+typedef glm::tvec3< Index >         Triangle;
 typedef ArrayWrapper< Vertex, 2 >   BoundingBox;
-typedef vmml::vector< 4, float >    BoundingSphere;
+typedef glm::tvec4< float >         BoundingSphere;
 typedef ArrayWrapper< float, 2 >    Range;
 
 // maximum triangle count per leaf node (keep in mind that the number of
