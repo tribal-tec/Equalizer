@@ -32,6 +32,8 @@ public:
     /** Construct a new application instance. @version 1.0 */
     SEQ_API Application();
 
+    virtual void onStartFrame() {}
+
     /** @name Data Access */
     //@{
     /** @return the node running the main instance. @version 1.3.1 */

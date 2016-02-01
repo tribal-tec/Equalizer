@@ -27,6 +27,7 @@ common_package(Qt5Gui)
 common_package(Qt5Widgets)
 common_package(vmmlib REQUIRED)
 common_package(VRPN)
+common_package(splotch)
 common_package(X11 SYSTEM)
 if(APPLE) # tweak window systems before finding glew
   if(EQ_AGL_USED)

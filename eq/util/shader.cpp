@@ -51,7 +51,8 @@ bool compile( const GLEWContext* glewContext LB_UNUSED, const unsigned shader,
 
 bool linkProgram( const GLEWContext* glewContext LB_UNUSED,
                   const unsigned program, const char* vertexShaderSource,
-                  const char* fragmentShaderSource )
+                  const char* fragmentShaderSource,
+                  const char* geometryShaderSource )
 {
     if( !program || !vertexShaderSource || !fragmentShaderSource )
     {
@@ -72,6 +73,30 @@ bool linkProgram( const GLEWContext* glewContext LB_UNUSED,
     {
         EQ_GL_CALL( glDeleteShader( fragmentShader ));
         return false;
+    }
+
+    if( geometryShaderSource )
+    {
+        const GLuint geometryShader = glCreateShader( GL_GEOMETRY_SHADER_ARB );
+        if( !compile( glewContext, geometryShader, geometryShaderSource ))
+        {
+            EQ_GL_CALL( glDeleteShader( geometryShader ));
+            return false;
+        }
+
+        EQ_GL_CALL( glAttachShader( program, geometryShader ));
+        EQ_GL_CALL( glDeleteShader( geometryShader ));
+
+        EQ_GL_CALL( glProgramParameteriEXT( program, GL_GEOMETRY_INPUT_TYPE_EXT, GL_POINTS ));
+        EQ_GL_CALL( glProgramParameteriEXT( program, GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_TRIANGLE_STRIP ));
+
+
+        // Setting output vertices to maximum possible caused large fps drop on linux AMD drivers (catalyst 12.6-4)
+        // So has been limited to 4 as that is all we need for now.
+
+        // GLint maxPossibleOutVerts;
+        // glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT,&maxPossibleOutVerts);
+        EQ_GL_CALL( glProgramParameteriEXT( program,GL_GEOMETRY_VERTICES_OUT_EXT, 4 ));
     }
 
     EQ_GL_CALL( glAttachShader( program, vertexShader ));

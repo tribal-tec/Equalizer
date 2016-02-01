@@ -54,7 +54,7 @@ EQ_API bool compile( const GLEWContext* glewContext,
  */
 EQ_API bool linkProgram( const GLEWContext* glewContext,
                          const unsigned program, const char* vertexShaderSource,
-                         const char* fragmentShaderSource );
+                         const char* fragmentShaderSource, const char* geometryShaderSource = nullptr );
 
 }
 }
