@@ -140,6 +140,15 @@ Error FrameBufferObject::init( const int32_t width, const int32_t height,
         }
     }
 
+//    GLuint RBOId;
+//    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, _fboID ));
+//    EQ_GL_CALL( glGenRenderbuffersEXT(1, &RBOId));
+//    EQ_GL_CALL( glBindRenderbufferEXT(GL_RENDERBUFFER, RBOId));
+//    EQ_GL_CALL( glRenderbufferStorageEXT(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height));
+//    EQ_GL_CALL( glBindRenderbufferEXT(GL_RENDERBUFFER, 0));
+//    EQ_GL_CALL( glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, RBOId));
+//    EQ_GL_CALL( glBindFramebufferEXT( GL_FRAMEBUFFER_EXT, 0 ));
+
     const Error error = _checkStatus();
     if( error )
     {

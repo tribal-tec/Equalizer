@@ -48,7 +48,7 @@ public:
     Model()
         : params( "/home/nachbaur/dev/viz.stable/splotch/configs/fivox.par", false )
         , sMaker( params )
-        , cpuRender( false )
+        , cpuRender( true )
     {
         get_colourmaps( params, amap );
         sMaker.getNextScene( particle_data, r_points, campos, centerpos, lookat, sky, outfile );
@@ -56,7 +56,26 @@ public:
         tsize npart = particle_data.size();
         bool boost = params.find<bool>("boost",false);
         b_brightness = boost ? float(npart)/float(r_points.size()) : 1.0;
+
+        unsigned numTypes = params.find<int>("ptypes",1);
+
+        for(unsigned i = 0; i < numTypes; i++)
+        {
+            brightness.push_back(params.find<float>("brightness"+dataToString(i),1.f) * params.find<float>("pv_brightness_mod"+dataToString(i),1.f));
+            //colour_is_vec.push_back(splotchParams->find<bool>("color_is_vector"+dataToString(i),0));
+            smoothing_length.push_back(params.find<float>("size_fix"+dataToString(i),0) );
+        }
+
+        // Ensure unused elements up to tenth are 1 (static size 10 array in shader)
+        if(brightness.size()<10)
+            brightness.resize(10,1);
+
+        if(smoothing_length.size()<10)
+            smoothing_length.resize(10,0);
+
+        radial_mod = params.find<double>("pv_radial_mod",1.f);
     }
+
     paramfile params;
     sceneMaker sMaker;
     std::vector< particle_sim > particle_data;
@@ -65,6 +84,11 @@ public:
     vec3 campos, centerpos, lookat, sky;
     std::string outfile;
     float b_brightness;
+
+    // gpu only
+    std::vector<float> brightness;
+    std::vector<float> smoothing_length;
+    float radial_mod;
 
     bool cpuRender;
 };

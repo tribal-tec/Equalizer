@@ -56,11 +56,13 @@ private:
     //State* _state;
 
     bool _loadShaders();
-    bool _genFBO();
+    bool _genFBO( Model& model );
     bool _genVBO();
+    bool _genTexture();
 
     eq::util::FrameBufferObject* _fboPassThrough;
     eq::util::FrameBufferObject* _fboTonemap;
+    eq::util::Texture* _texture;
     GLuint _vertexBuffer;
     GLuint _program;
     GLuint _passThroughShader;

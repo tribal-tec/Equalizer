@@ -28,6 +28,9 @@
 
 #include "renderer.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <splotch/splotch_host.h>
 
 #include <PP_FBO.frag.h>
@@ -75,6 +78,9 @@ bool Renderer::initContext( co::Object* initData )
     if( !_loadShaders( ))
         return false;
 
+    if( !_genTexture( ))
+        return false;
+
     glEnable(GL_PROGRAM_POINT_SIZE_EXT);
 
     return true;
@@ -83,6 +89,7 @@ bool Renderer::initContext( co::Object* initData )
 bool Renderer::exitContext()
 {
     seq::ObjectManager& om = getObjectManager();
+    om.deleteEqTexture( &_texture );
     om.deleteProgram( &_program );
     om.deleteProgram( &_passThroughShader );
     om.deleteProgram( &_tonemapShader );
@@ -107,6 +114,9 @@ bool Renderer::_loadShaders()
     EQ_GL_CALL( glUseProgram( _program ));
     _matrixUniform = glGetUniformLocation( _program, "MVP" );
 
+    GLuint texSrc = glGetUniformLocation( _program, "Tex0" );
+    EQ_GL_CALL( glUniform1i( texSrc, 0 ));
+
     _passThroughShader = om.newProgram( &_passThroughShader );
     if( !seq::linkProgram( om.glewGetContext(), _passThroughShader, FBO_Passthrough_vert,
                            FBO_Passthrough_frag ))
@@ -117,8 +127,12 @@ bool Renderer::_loadShaders()
 
     const seq::Matrix4f mvp = seq::Matrix4f::IDENTITY;
     EQ_GL_CALL( glUseProgram( _passThroughShader ));
+
     GLuint mvpUnif = glGetUniformLocation( _passThroughShader, "MVP" );
     EQ_GL_CALL( glUniformMatrix4fv( mvpUnif, 1, GL_FALSE, &mvp[0] ));
+
+    texSrc = glGetUniformLocation( _passThroughShader, "Tex0" );
+    EQ_GL_CALL( glUniform1i( texSrc, 0 ));
 
     _tonemapShader = om.newProgram( &_tonemapShader );
     if( !seq::linkProgram( om.glewGetContext(), _tonemapShader, FBO_ToneMap_vert,
@@ -132,23 +146,31 @@ bool Renderer::_loadShaders()
     mvpUnif = glGetUniformLocation( _tonemapShader, "MVP" );
     EQ_GL_CALL( glUniformMatrix4fv( mvpUnif, 1, GL_FALSE, &mvp[0] ));
 
+    texSrc = glGetUniformLocation( _tonemapShader, "Tex0" );
+    EQ_GL_CALL( glUniform1i( texSrc, 0 ));
+
     EQ_GL_CALL( glUseProgram( 0 ));
     return true;
 }
 
-bool Renderer::_genFBO()
+bool Renderer::_genFBO( Model& /*model*/ )
 {
+//    int xres = model.params.find<int>("xres",800),
+//        yres = model.params.find<int>("yres",xres);
+    int xres = getPixelViewport().w;
+    int yres = getPixelViewport().h;
+
     seq::ObjectManager& om = getObjectManager();
 
     _fboPassThrough = om.newEqFrameBufferObject( &_fboPassThrough );
-    if( _fboPassThrough->init( getPixelViewport().w, getPixelViewport().h, GL_RGBA16F, 24, 0 ) != eq::ERROR_NONE )
+    if( _fboPassThrough->init( xres, yres, GL_RGBA32F, 24, 0 ) != eq::ERROR_NONE )
     {
         om.deleteEqFrameBufferObject( &_fboPassThrough );
         return false;
     }
 
     _fboTonemap = om.newEqFrameBufferObject( &_fboTonemap );
-    if( _fboTonemap->init( getPixelViewport().w, getPixelViewport().h, GL_RGBA16F, 24, 0 ) != eq::ERROR_NONE )
+    if( _fboTonemap->init( xres, yres, GL_RGBA32F, 24, 0 ) != eq::ERROR_NONE )
     {
         om.deleteEqFrameBufferObject( &_fboTonemap );
         return false;
@@ -175,6 +197,26 @@ bool Renderer::_genVBO()
                                  &model.particle_data[0] ));
     EQ_GL_CALL( glBindBuffer( GL_ARRAY_BUFFER, 0 ));
 
+    return true;
+}
+
+bool Renderer::_genTexture()
+{
+    int width, height, comp;
+    void* pixels = stbi_load( "/home/nachbaur/dev/viz.stable/Equalizer/examples/seqSplotch/particle.tga", &width, &height, &comp, 0 );
+    if( !pixels )
+        return false;
+    seq::ObjectManager& om = getObjectManager();
+    _texture = om.newEqTexture( &_texture, GL_TEXTURE_2D );
+    _texture->init( GL_RGBA, width, height );
+    _texture->setExternalFormat( GL_RGBA, GL_UNSIGNED_BYTE );
+    _texture->upload( width, height, pixels );
+    EQ_GL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT ));
+    EQ_GL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT ));
+    EQ_GL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR ));
+    EQ_GL_CALL( glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR ));
+    stbi_image_free( pixels );
+    EQ_GL_CALL( glBindTexture( GL_TEXTURE_2D, 0 ));
     return true;
 }
 
@@ -230,28 +272,61 @@ void Renderer::gpuRender( Model& model )
 
     if( !_fboPassThrough )
     {
-        if( !_genFBO( ))
+        if( !_genFBO( model ))
             return;
 
         if( !_genVBO( ))
             return;
+
+        EQ_GL_CALL( glUseProgram( _program ));
+
+        GLint loc = glGetUniformLocation( _program, "inBrightness" );
+        EQ_GL_CALL( glUniform1fv( loc, 10, (float*)&model.brightness[0] ));
+
+        loc = glGetUniformLocation( _program, "inRadialMod" );
+        EQ_GL_CALL( glUniform1fv( loc, 1, (float*)&model.radial_mod ));
+
+        loc = glGetUniformLocation( _program, "inSmoothingLength" );
+        EQ_GL_CALL( glUniform1fv( loc, 10, (float*)&model.smoothing_length[0] ));
+
+        EQ_GL_CALL( glUseProgram( 0 ));
     }
+
+//    int xres = model.params.find<int>("xres",800),
+//        yres = model.params.find<int>("yres",xres);
+
+    EQ_GL_CALL( glClearColor( 0.2, 0.2, 0.2, 1.0 ));
+    EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
 
     const seq::Matrix4f mvp = getFrustum().compute_matrix() * getViewMatrix() *
                               getModelMatrix();
 
     const eq::PixelViewport& pvp = getPixelViewport();
+    //EQ_GL_CALL( glViewport( 0, 0, xres, yres ));
+    //EQ_GL_CALL( glScissor( 0, 0, xres, yres ));
     EQ_GL_CALL( glViewport( pvp.x, pvp.y, pvp.w, pvp.h ));
     EQ_GL_CALL( glScissor( pvp.x, pvp.y, pvp.w, pvp.h ));
+
+    glActiveTexture(GL_TEXTURE0);
 
     // Draw scene into passthrough FBO
     _fboPassThrough->bind();
 
-    EQ_GL_CALL( glClearColor(0.0, 1.0, 0.0, 1.0 ));
+    EQ_GL_CALL( glClearColor( 0.0, 0.0, 0.0, 1.0 ));
     EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
 
-    EQ_GL_CALL( glBindBuffer( GL_ARRAY_BUFFER, _vertexBuffer ));
+    EQ_GL_CALL( glDisable( GL_ALPHA_TEST ));
+    EQ_GL_CALL( glDisable( GL_CULL_FACE ));
+    EQ_GL_CALL( glDisable( GL_DEPTH_TEST ));
+    EQ_GL_CALL( glEnable( GL_BLEND ));
+    EQ_GL_CALL( glBlendFunc( GL_SRC_ALPHA, GL_ONE ));
+
+    glActiveTexture( GL_TEXTURE0 );
+    glEnable( GL_TEXTURE_2D );
+    _texture->bind();
+
     EQ_GL_CALL( glUseProgram( _program ));
+    EQ_GL_CALL( glBindBuffer( GL_ARRAY_BUFFER, _vertexBuffer ));
 
     EQ_GL_CALL( glUniformMatrix4fv( _matrixUniform, 1, GL_FALSE, &mvp[0] ));
 
@@ -268,17 +343,48 @@ void Renderer::gpuRender( Model& model )
     EQ_GL_CALL( glBindBuffer( GL_ARRAY_BUFFER, 0 ));
     EQ_GL_CALL( glUseProgram( 0 ));
 
+    EQ_GL_CALL( glBindTexture( GL_TEXTURE_2D, 0 ));
     _fboPassThrough->unbind();
+
+    const bool showRender = false;
+
+    if( showRender )
+    {
+        _fboPassThrough->bind( GL_READ_FRAMEBUFFER_EXT );
+        //_fboTonemap->bind( GL_DRAW_FRAMEBUFFER_EXT );
+        EQ_GL_CALL( glBlitFramebuffer( pvp.x, pvp.y, pvp.w, pvp.h,
+                                   pvp.x, pvp.y, pvp.w, pvp.h,
+                                   GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
+                                   GL_STENCIL_BUFFER_BIT, GL_NEAREST ));
+        _fboPassThrough->unbind();
+        //_fboTonemap->unbind();
+        return;
+    }
+
+    //_fboPassThrough->getColorTextures()[0]->writeRGB( "/tmp/bla" );
+    _fboPassThrough->getColorTextures()[0]->bind();
 
     // Draw passthrough FBO into ToneMapping FBO
     _fboTonemap->bind();
 
-    EQ_GL_CALL( glClearColor( 0.1, 0.7, 0.1, 1.0 ));
+
+    EQ_GL_CALL( glClearColor( 1, 0.0, 0.1, 1.0 ));
     EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
+
+    EQ_GL_CALL( glDisable( GL_ALPHA_TEST ));
+    EQ_GL_CALL( glDisable( GL_CULL_FACE ));
+    EQ_GL_CALL( glDisable( GL_DEPTH_TEST ));
+    EQ_GL_CALL( glDisable( GL_BLEND ));
+
+//    glActiveTexture( GL_TEXTURE0 );
+//    glEnable( GL_TEXTURE_2D );
 
     // Bind material
     //fboPTMaterial->Bind(ident);
     EQ_GL_CALL( glUseProgram( _passThroughShader ));
+
+//    GLuint mvpUnif = glGetUniformLocation( _passThroughShader, "MVP" );
+//    EQ_GL_CALL( glUniformMatrix4fv( mvpUnif, 1, GL_FALSE, &mvp[0] ));
 
     glBegin(GL_QUADS);
 
@@ -291,44 +397,46 @@ void Renderer::gpuRender( Model& model )
 
     //fboPTMaterial->Unbind();
     EQ_GL_CALL( glUseProgram( 0 ));
+    EQ_GL_CALL( glBindTexture( GL_TEXTURE_2D, 0 ));
 
     _fboTonemap->unbind();
 
-    applyScreenFrustum();
-//    // Draw ToneMapping FBO to screen
-//    glEnable(GL_SCISSOR_TEST);
+    {
+        _fboTonemap->bind( GL_READ_FRAMEBUFFER_EXT );
+        EQ_GL_CALL( glBlitFramebuffer( pvp.x, pvp.y, pvp.w, pvp.h,
+                                   pvp.x, pvp.y, pvp.w, pvp.h,
+                                   GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
+                                   GL_STENCIL_BUFFER_BIT, GL_NEAREST ));
+        _fboTonemap->unbind();
+    }
 
-//    glViewport(0,0, ParticleSimulation::GetSimWindowWidth(),ParticleSimulation::GetSimWindowHeight());
-//    glScissor(0,0, ParticleSimulation::GetSimWindowWidth(),ParticleSimulation::GetSimWindowHeight());
 
-//    // Set 3d rendering viewport size
-//    float viewXmin = ParticleSimulation::GetRenderXMin();
-//    float viewYmin = ParticleSimulation::GetRenderYMin();
+//    applyScreenFrustum();
 
-//    // Set 3d render viewport to scissor and clear
-//    glViewport(viewXmin,viewYmin, ParticleSimulation::GetRenderWidth(), ParticleSimulation::GetRenderHeight());
-//    glScissor(viewXmin,viewYmin, ParticleSimulation::GetRenderWidth(),ParticleSimulation::GetRenderHeight());
+//    EQ_GL_CALL( glViewport( pvp.x, pvp.y, pvp.w, pvp.h ));
+//    EQ_GL_CALL( glScissor( pvp.x, pvp.y, pvp.w, pvp.h ));
 
-    EQ_GL_CALL( glClearColor( 1.0, 0.1, 0.1, 1.0 ));
-    EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
+//    EQ_GL_CALL( glClearColor( 1.0, 0.1, 0.1, 1.0 ));
+//    EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
 
-    // Bind material
-    //fboTMMaterial->Bind(ident);
-    EQ_GL_CALL( glUseProgram( _tonemapShader));
+//    // Bind material
+//    //fboTMMaterial->Bind(ident);
+//    EQ_GL_CALL( glUseProgram( _tonemapShader ));
 
-    glBegin(GL_QUADS);
+////    mvpUnif = glGetUniformLocation( _tonemapShader, "MVP" );
+////    EQ_GL_CALL( glUniformMatrix4fv( mvpUnif, 1, GL_FALSE, &mvp[0] ));
 
-        glTexCoord2f(0,0);  glVertex3f(-1, -1, 0);
-        glTexCoord2f(0,1);  glVertex3f(-1, 1, 0);
-        glTexCoord2f(1,1);  glVertex3f(1, 1, 0);
-        glTexCoord2f(1,0);  glVertex3f(1, -1, 0);
+//    glBegin(GL_QUADS);
 
-    glEnd();
+//        glTexCoord2f(0,0);  glVertex3f(-1, -1, 0);
+//        glTexCoord2f(0,1);  glVertex3f(-1, 1, 0);
+//        glTexCoord2f(1,1);  glVertex3f(1, 1, 0);
+//        glTexCoord2f(1,0);  glVertex3f(1, -1, 0);
 
-    //fboTMMaterial->Unbind();
-    EQ_GL_CALL( glUseProgram( 0 ));
+//    glEnd();
 
-    //glDisable(GL_SCISSOR_TEST);
+//    //fboTMMaterial->Unbind();
+//    EQ_GL_CALL( glUseProgram( 0 ));
 }
 
 void Renderer::draw( co::Object* /*frameDataObj*/ )
