@@ -234,8 +234,53 @@ void Renderer::cpuRender( Model& model )
         yres = model.params.find<int>("yres",xres);
     arr2<COLOUR> pic( xres, yres );
 
-    host_rendering( model.params, model.particle_data, pic, model.campos,
-                    model.centerpos, model.lookat, model.sky, model.amap, model.b_brightness, 1 );
+    const auto modelMat = getModelMatrix();
+
+    const seq::Vector3f eye( model.campos.x, model.campos.y, model.campos.z );
+    const seq::Vector3f f( vmml::normalize( eye -
+                                            seq::Vector3f( model.lookat.x, model.lookat.y, model.lookat.z ) ));
+    const seq::Vector3f s( vmml::normalize( vmml::cross( f, seq::Vector3f( model.sky.x, model.sky.y, model.sky.z ))));
+    const seq::Vector3f u( vmml::cross( s, f ));
+
+    seq::Matrix4f currentMat;
+//    currentMat( 0, 0 ) = s.x();
+//    currentMat( 1, 0 ) = s.y();
+//    currentMat( 2, 0 ) = s.z();
+//    currentMat( 0, 1 ) = u.x();
+//    currentMat( 1, 1 ) = u.y();
+//    currentMat( 2, 1 ) = u.z();
+//    currentMat( 0, 2 ) =-f.x();
+//    currentMat( 1, 2 ) =-f.y();
+//    currentMat( 2, 2 ) =-f.z();
+//    currentMat( 3, 0 ) =-vmml::dot(s, eye);
+//    currentMat( 3, 1 ) =-vmml::dot(u, eye);
+//    currentMat( 3, 2 ) = vmml::dot(f, eye);
+    currentMat( 0, 0 ) = s.x();
+    currentMat( 0, 1 ) = s.y();
+    currentMat( 0, 2 ) = s.z();
+    currentMat( 1, 0 ) = u.x();
+    currentMat( 1, 1 ) = u.y();
+    currentMat( 1, 2 ) = u.z();
+    currentMat( 2, 0 ) =-f.x();
+    currentMat( 2, 1 ) =-f.y();
+    currentMat( 2, 2 ) =-f.z();
+    currentMat( 0, 3 ) =-vmml::dot(s, eye);
+    currentMat( 1, 3 ) =-vmml::dot(u, eye);
+    currentMat( 2, 3 ) = vmml::dot(f, eye);
+
+    auto newMat = modelMat * currentMat;
+
+    seq::Vector3f newEye;
+
+    seq::Matrix3f rotationMatrix;
+    newMat.get_sub_matrix( rotationMatrix, 0, 0 );
+    newMat.get_translation( newEye );
+
+    seq::Vector3f newLookAt( rotationMatrix );
+
+    auto particles = model.particle_data;
+    host_rendering( model.params, particles, pic, vec3( newEye.x(), newEye.y(), newEye.z()),
+                    vec3( newEye.x(), newEye.y(), newEye.z()), vec3( newLookAt.x(), newLookAt.y(), newLookAt.z()), model.sky, model.amap, model.b_brightness, 1 );
 
     bool a_eq_e = model.params.find<bool>("a_eq_e",true);
     if( a_eq_e )

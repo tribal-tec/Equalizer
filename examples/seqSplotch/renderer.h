@@ -68,6 +68,7 @@ private:
     GLuint _passThroughShader;
     GLuint _tonemapShader;
     GLuint _matrixUniform;
+    seq::Matrix4f _oldModelMatrix;
 };
 
 }
