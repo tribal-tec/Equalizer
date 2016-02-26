@@ -302,11 +302,11 @@ void Texture::bindToFBO( const GLenum target, const int32_t width,
     LBASSERT( _impl->internalFormat );
     LBASSERT( _impl->glewContext );
 
-    //_generate();
+    _generate();
 
-    //EQ_GL_CALL( glBindTexture( _impl->target, _impl->name ));
-    //EQ_GL_CALL( glTexImage2D( _impl->target, 0, _impl->internalFormat, width,
-//                              height, 0, _impl->format, _impl->type, 0 ));
+    EQ_GL_CALL( glBindTexture( _impl->target, _impl->name ));
+    EQ_GL_CALL( glTexImage2D( _impl->target, 0, _impl->internalFormat, width,
+                              height, 0, _impl->format, _impl->type, 0 ));
     EQ_GL_CALL( glFramebufferTexture2DEXT( GL_FRAMEBUFFER, target,
                                            _impl->target, _impl->name, 0 ));
 
@@ -339,10 +339,6 @@ void Texture::resize( const int32_t width, const int32_t height )
     }
 
     EQ_GL_CALL( glBindTexture( _impl->target, _impl->name ));
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     EQ_GL_CALL( glTexImage2D( _impl->target, 0, _impl->internalFormat, width,
                               height, 0, _impl->format, _impl->type, 0 ));
     _impl->width  = width;

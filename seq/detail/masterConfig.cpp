@@ -87,7 +87,6 @@ bool MasterConfig::run( co::Object* frameData )
     seq::Application* const app = getApplication();
     while( isRunning( ))
     {
-        app->onStartFrame();
         startFrame();
         finishFrame();
 

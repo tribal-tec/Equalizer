@@ -54,8 +54,8 @@ public:
         sMaker.getNextScene( particle_data, r_points, campos, centerpos, lookat, sky, outfile );
 
         tsize npart = particle_data.size();
-        bool boost = params.find<bool>("boost",false);
-        b_brightness = boost ? float(npart)/float(r_points.size()) : 1.0;
+        _boost = params.find<bool>("boost",false);
+        b_brightness = _boost ? float(npart)/float(r_points.size()) : 1.0;
 
         unsigned numTypes = params.find<int>("ptypes",1);
 
@@ -76,6 +76,19 @@ public:
         radial_mod = params.find<double>("pv_radial_mod",1.f);
     }
 
+    std::vector< particle_sim > getParticles() const
+    {
+        return _boost ? r_points : particle_data;
+    }
+
+    seq::Matrix4f getModelMatrix() const
+    {
+        const seq::Vector3f eye( campos.x, campos.y, campos.z );
+        const seq::Vector3f center( lookat.x, lookat.y, lookat.z );
+        const seq::Vector3f up( sky.x, sky.y, sky.z );
+        return seq::Matrix4f( eye, center, up );
+    }
+
     paramfile params;
     sceneMaker sMaker;
     std::vector< particle_sim > particle_data;
@@ -83,7 +96,9 @@ public:
     std::vector< COLOURMAP > amap;
     vec3 campos, centerpos, lookat, sky;
     std::string outfile;
+    bool _boost;
     float b_brightness;
+    std::vector<particle_sim>* pData;
 
     // gpu only
     std::vector<float> brightness;
@@ -93,15 +108,44 @@ public:
     bool cpuRender;
 };
 
+class ViewData : public seq::ViewData
+{
+public:
+    ViewData( const seq::Matrix4f& initialModelMatrix )
+        : _initialModelMatrix( initialModelMatrix )
+    {
+        setModelMatrix( _initialModelMatrix );
+    }
+    ~ViewData() {}
+
+    bool handleEvent( const eq::ConfigEvent* event_ ) final
+    {
+        const eq::Event& event = event_->data;
+        switch( event.type )
+        {
+        case eq::Event::KEY_PRESS:
+            switch( event.keyPress.key )
+            {
+            case ' ':
+                setModelMatrix( _initialModelMatrix );
+                return true;
+            }
+        }
+        return seq::ViewData::handleEvent( event_ );
+    }
+
+private:
+    const seq::Matrix4f _initialModelMatrix;
+};
+
 class Application : public seq::Application
 {
 public:
-    Application() /*: _model( 0 ), _modelDist( 0 )*/ {}
+    Application();
 
     bool init( const int argc, char** argv );
     bool run();
     bool exit() final;
-    void onStartFrame() final;
 
     seq::Renderer* createRenderer()  final;
     co::Object* createObject( const uint32_t type )  final;
@@ -109,6 +153,9 @@ public:
     Model& getModel(/* const eq::uint128_t& modelID */);
 
 private:
+    seq::ViewData* createViewData() final;
+    void destroyViewData( seq::ViewData* viewData ) final;
+
     FrameData _frameData;
     std::unique_ptr< Model > _model;
 //    ModelDist* _modelDist;
@@ -118,6 +165,8 @@ private:
 //    eq::Strings _parseArguments( const int argc, char** argv );
     void _loadModel(/* const eq::Strings& models */);
 //    void _unloadModel();
+
+    ViewData* _viewData;
 };
 
 typedef lunchbox::RefPtr< Application > ApplicationPtr;

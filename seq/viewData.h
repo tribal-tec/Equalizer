@@ -95,6 +95,7 @@ public:
      *
      * Called once at the end of each frame to trigger animations. The default
      * implementation updates the camera data.
+     *
      * @return true to request a redraw.
      * @version 1.0
      */
@@ -103,6 +104,8 @@ public:
 
     /** @name Data Access. */
     //@{
+    SEQ_API void setModelMatrix( const Matrix4f& matrix );
+
     /** @return the current model matrix (global camera). @version 1.0 */
     const Matrix4f& getModelMatrix() const { return _modelMatrix; }
 
@@ -115,10 +118,9 @@ public:
     //@}
 
 protected:
-    virtual SEQ_API void serialize( co::DataOStream& os,
-                                    const uint64_t dirtyBits );
-    virtual SEQ_API void deserialize( co::DataIStream& is,
-                                      const uint64_t dirtyBits );
+    SEQ_API void serialize( co::DataOStream& os, uint64_t dirtyBits ) override;
+    SEQ_API void deserialize( co::DataIStream& is,
+                              uint64_t dirtyBits ) override;
 
 private:
     /** The changed parts of the object since the last serialize(). */

@@ -34,6 +34,7 @@
 #include <seq/application.h>
 #include <seq/objectType.h>
 #include <seq/renderer.h>
+#include <seq/viewData.h>
 #include <eq/eq.h>
 
 #pragma warning(pop)

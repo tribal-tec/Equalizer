@@ -32,8 +32,6 @@ public:
     /** Construct a new application instance. @version 1.0 */
     SEQ_API Application();
 
-    virtual void onStartFrame() {}
-
     /** @name Data Access */
     //@{
     /** @return the node running the main instance. @version 1.3.1 */
@@ -55,8 +53,7 @@ public:
      * @return true on success, false otherwise.
      * @version 1.0
      */
-    SEQ_API virtual bool init( const int argc, char** argv,
-                               co::Object* initData );
+    SEQ_API virtual bool init( int argc, char** argv, co::Object* initData );
 
     /**
      * Run the application main loop.

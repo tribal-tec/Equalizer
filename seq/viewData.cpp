@@ -31,13 +31,13 @@ namespace seq
 {
 ViewData::ViewData()
         : _modelMatrix( eq::Matrix4f::IDENTITY )
-        , _spinX( 5 )
-        , _spinY( 5 )
+        , _spinX( 0 )
+        , _spinY( 0 )
         , _advance( 0 )
         , _statistics( false )
         , _ortho( false )
 {
-    moveModel( 0.f, 0.f, -2.f );
+    //moveModel( 0.f, 0.f, -2.f );
 }
 
 ViewData::~ViewData()
@@ -180,7 +180,7 @@ void ViewData::moveModel( const float x, const float y, const float z )
         return;
 
     _modelMatrix.set_translation( _modelMatrix.get_translation() +
-                                  Vector3f( x, y, z ));
+                                  Vector3f( x*1000.f, y*1000.f, z*1000.f ));
     setDirty( DIRTY_MODELMATRIX );
 }
 
@@ -193,13 +193,22 @@ void ViewData::showStatistics( const bool on )
     setDirty( DIRTY_STATISTICS );
 }
 
-void  ViewData::setOrtho( const bool on )
+void ViewData::setOrtho( const bool on )
 {
     if( _ortho == on )
         return;
 
     _ortho = on;
     setDirty( DIRTY_ORTHO );
+}
+
+void ViewData::setModelMatrix( const Matrix4f& matrix )
+{
+    if( _modelMatrix == matrix )
+        return;
+
+    _modelMatrix = matrix;
+    setDirty( DIRTY_MODELMATRIX );
 }
 
 bool ViewData::update()

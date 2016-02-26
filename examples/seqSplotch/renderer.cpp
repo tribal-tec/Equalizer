@@ -230,57 +230,22 @@ bool Renderer::exit()
 
 void Renderer::cpuRender( Model& model )
 {
-    int xres = model.params.find<int>("xres",800),
-        yres = model.params.find<int>("yres",xres);
+    seq::Vector3f eye;
+    seq::Vector3f lookAt;
+    seq::Vector3f up;
+    getModelMatrix().getLookAt( eye, lookAt, up );
+
+    const int xres = getPixelViewport().w;
+    const int yres = getPixelViewport().h;
+
+    model.params.setParam( "xres", xres );
+    model.params.setParam( "yres", yres );
+
     arr2<COLOUR> pic( xres, yres );
 
-    const auto modelMat = getModelMatrix();
-
-    const seq::Vector3f eye( model.campos.x, model.campos.y, model.campos.z );
-    const seq::Vector3f f( vmml::normalize( eye -
-                                            seq::Vector3f( model.lookat.x, model.lookat.y, model.lookat.z ) ));
-    const seq::Vector3f s( vmml::normalize( vmml::cross( f, seq::Vector3f( model.sky.x, model.sky.y, model.sky.z ))));
-    const seq::Vector3f u( vmml::cross( s, f ));
-
-    seq::Matrix4f currentMat;
-//    currentMat( 0, 0 ) = s.x();
-//    currentMat( 1, 0 ) = s.y();
-//    currentMat( 2, 0 ) = s.z();
-//    currentMat( 0, 1 ) = u.x();
-//    currentMat( 1, 1 ) = u.y();
-//    currentMat( 2, 1 ) = u.z();
-//    currentMat( 0, 2 ) =-f.x();
-//    currentMat( 1, 2 ) =-f.y();
-//    currentMat( 2, 2 ) =-f.z();
-//    currentMat( 3, 0 ) =-vmml::dot(s, eye);
-//    currentMat( 3, 1 ) =-vmml::dot(u, eye);
-//    currentMat( 3, 2 ) = vmml::dot(f, eye);
-    currentMat( 0, 0 ) = s.x();
-    currentMat( 0, 1 ) = s.y();
-    currentMat( 0, 2 ) = s.z();
-    currentMat( 1, 0 ) = u.x();
-    currentMat( 1, 1 ) = u.y();
-    currentMat( 1, 2 ) = u.z();
-    currentMat( 2, 0 ) =-f.x();
-    currentMat( 2, 1 ) =-f.y();
-    currentMat( 2, 2 ) =-f.z();
-    currentMat( 0, 3 ) =-vmml::dot(s, eye);
-    currentMat( 1, 3 ) =-vmml::dot(u, eye);
-    currentMat( 2, 3 ) = vmml::dot(f, eye);
-
-    auto newMat = modelMat * currentMat;
-
-    seq::Vector3f newEye;
-
-    seq::Matrix3f rotationMatrix;
-    newMat.get_sub_matrix( rotationMatrix, 0, 0 );
-    newMat.get_translation( newEye );
-
-    seq::Vector3f newLookAt( rotationMatrix );
-
-    auto particles = model.particle_data;
-    host_rendering( model.params, particles, pic, vec3( newEye.x(), newEye.y(), newEye.z()),
-                    vec3( newEye.x(), newEye.y(), newEye.z()), vec3( newLookAt.x(), newLookAt.y(), newLookAt.z()), model.sky, model.amap, model.b_brightness, 1 );
+    auto particles = model.getParticles();
+    host_rendering( model.params, particles, pic, vec3( eye.x(), eye.y(), eye.z()),
+                    vec3( eye.x(), eye.y(), eye.z()), vec3( lookAt.x(), lookAt.y(), lookAt.z()), vec3( up.x(), up.y(), up.z()), model.amap, model.b_brightness, 1 );
 
     bool a_eq_e = model.params.find<bool>("a_eq_e",true);
     if( a_eq_e )
@@ -296,25 +261,41 @@ void Renderer::cpuRender( Model& model )
           }
     }
 
-    float* pixels = new float[xres*yres*3];
-    for( int i = 0; i < xres; ++i )
-    {
-        for( int j = 0; j < yres; ++j )
+    double gamma=model.params.find<double>("pic_gamma",1.0);
+    double helligkeit=model.params.find<double>("pic_brighness",0.0);
+    double kontrast=model.params.find<double>("pic_contrast",1.0);
+
+    if (gamma != 1.0 || helligkeit != 0.0 || kontrast != 1.0)
+      {
+#pragma omp parallel for
+        for (tsize i=0; i<pic.size1(); ++i)
+          for (tsize j=0; j<pic.size2(); ++j)
         {
-            pixels[(i*xres + j)*3 + 0] = pic[i][j].r;
-            pixels[(i*xres + j)*3 + 1] = pic[i][j].g;
-            pixels[(i*xres + j)*3 + 2] = pic[i][j].b;
+          pic[i][j].r = kontrast * pow((double)pic[i][j].r,gamma) + helligkeit;
+              pic[i][j].g = kontrast * pow((double)pic[i][j].g,gamma) + helligkeit;
+              pic[i][j].b = kontrast * pow((double)pic[i][j].b,gamma) + helligkeit;
+        }
+       }
+
+    float* pixels = new float[xres*yres*3];
+    int k = 0;
+    for( int j = 0; j < yres; ++j )
+    {
+        for( int i = 0; i < xres; ++i )
+        {
+            pixels[k++] = pic[i][j].r;
+            pixels[k++] = pic[i][j].g;
+            pixels[k++] = pic[i][j].b;
         }
     }
 
+    glWindowPos2i( 0, 0 );
     glDrawPixels(xres,yres,GL_RGB,GL_FLOAT,pixels);
     delete [] pixels;
 }
 
 void Renderer::gpuRender( Model& model )
 {
-    applyRenderContext(); // set up OpenGL State
-
     if( !_fboPassThrough )
     {
         if( !_genFBO( model ))
@@ -343,8 +324,8 @@ void Renderer::gpuRender( Model& model )
     EQ_GL_CALL( glClearColor( 0.2, 0.2, 0.2, 1.0 ));
     EQ_GL_CALL( glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
 
-    const seq::Matrix4f mvp = getFrustum().compute_matrix() * getViewMatrix() *
-                              getModelMatrix();
+    const seq::Matrix4f mvp = getFrustum().computePerspectiveMatrix() *
+                              getViewMatrix() * getModelMatrix();
 
     const eq::PixelViewport& pvp = getPixelViewport();
     //EQ_GL_CALL( glViewport( 0, 0, xres, yres ));
@@ -490,6 +471,8 @@ void Renderer::draw( co::Object* /*frameDataObj*/ )
 
     Application& application = static_cast< Application& >( getApplication( ));
     Model& model = application.getModel();
+
+    applyRenderContext(); // set up OpenGL State
 
     if( model.cpuRender )
         cpuRender( model );

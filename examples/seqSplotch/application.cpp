@@ -44,24 +44,23 @@ namespace po = boost::program_options;
 
 namespace seqSplotch
 {
+Application::Application()
+    : _viewData( nullptr )
+{}
+
 bool Application::init( const int argc, char** argv )
 {
+    _loadModel(/* models */);
     //const eq::Strings& models = _parseArguments( argc, argv );
     if( !seq::Application::init( argc, argv, 0 ))
         return false;
 
-    _loadModel(/* models */);
     return true;
 }
 
 bool Application::run()
 {
     return seq::Application::run( &_frameData );
-}
-
-void Application::onStartFrame()
-{
-    //_frameData->
 }
 
 bool Application::exit()
@@ -85,6 +84,18 @@ co::Object* Application::createObject( const uint32_t type )
       default:
           return seq::Application::createObject( type );
     }
+}
+
+seq::ViewData* Application::createViewData()
+{
+    _viewData = new ViewData( _model->getModelMatrix( ));
+    return _viewData;
+}
+
+void Application::destroyViewData( seq::ViewData* viewData )
+{
+    if( _viewData == viewData )
+        _viewData = nullptr;
 }
 
 //eq::Strings Application::_parseArguments( const int argc, char** argv )

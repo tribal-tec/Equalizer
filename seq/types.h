@@ -24,7 +24,6 @@
 namespace seq
 {
 using eq::Frustumf;
-using eq::Matrix3f;
 using eq::Matrix4f;
 using eq::PixelViewport;
 using eq::Vector3f;
