@@ -245,7 +245,7 @@ void Renderer::cpuRender( Model& model )
 
     auto particles = model.getParticles();
     host_rendering( model.params, particles, pic, vec3( eye.x(), eye.y(), eye.z()),
-                    vec3( eye.x(), eye.y(), eye.z()), vec3( lookAt.x(), lookAt.y(), lookAt.z()), vec3( up.x(), up.y(), up.z()), model.amap, model.b_brightness, 1 );
+                    vec3( eye.x(), eye.y(), eye.z()), vec3( lookAt.x(), lookAt.y(), lookAt.z()), vec3( up.x(), up.y(), up.z()), model.amap, model.b_brightness, particles.size() );
 
     bool a_eq_e = model.params.find<bool>("a_eq_e",true);
     if( a_eq_e )

@@ -51,13 +51,10 @@ public:
         , cpuRender( true )
     {
         get_colourmaps( params, amap );
-        sMaker.getNextScene( particle_data, r_points, campos, centerpos, lookat, sky, outfile );
+        _boost = params.find< bool >( "boost", false );
+        radial_mod = params.find< double >( "pv_radial_mod", 1.f );
 
-        tsize npart = particle_data.size();
-        _boost = params.find<bool>("boost",false);
-        b_brightness = _boost ? float(npart)/float(r_points.size()) : 1.0;
-
-        unsigned numTypes = params.find<int>("ptypes",1);
+        const unsigned numTypes = params.find<int>( "ptypes", 1 );
 
         for(unsigned i = 0; i < numTypes; i++)
         {
@@ -73,7 +70,15 @@ public:
         if(smoothing_length.size()<10)
             smoothing_length.resize(10,0);
 
-        radial_mod = params.find<double>("pv_radial_mod",1.f);
+        loadNextFrame();
+    }
+
+    void loadNextFrame()
+    {
+        particle_data.clear();
+        r_points.clear();
+        sMaker.getNextScene( particle_data, r_points, campos, centerpos, lookat, sky, outfile );
+        b_brightness = _boost ? float(particle_data.size())/float(r_points.size()) : 1.0;
     }
 
     std::vector< particle_sim > getParticles() const
@@ -111,8 +116,9 @@ public:
 class ViewData : public seq::ViewData
 {
 public:
-    ViewData( const seq::Matrix4f& initialModelMatrix )
-        : _initialModelMatrix( initialModelMatrix )
+    ViewData( Model& model )
+        : _initialModelMatrix( model.getModelMatrix( ))
+        , _model( model )
     {
         setModelMatrix( _initialModelMatrix );
     }
@@ -129,6 +135,9 @@ public:
             case ' ':
                 setModelMatrix( _initialModelMatrix );
                 return true;
+            case 'n':
+                _model.loadNextFrame();
+                return true;
             }
         }
         return seq::ViewData::handleEvent( event_ );
@@ -136,6 +145,7 @@ public:
 
 private:
     const seq::Matrix4f _initialModelMatrix;
+    Model& _model;
 };
 
 class Application : public seq::Application

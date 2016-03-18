@@ -88,7 +88,7 @@ co::Object* Application::createObject( const uint32_t type )
 
 seq::ViewData* Application::createViewData()
 {
-    _viewData = new ViewData( _model->getModelMatrix( ));
+    _viewData = new ViewData( *_model );
     return _viewData;
 }
 
