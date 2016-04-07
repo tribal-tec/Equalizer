@@ -1,6 +1,6 @@
 
-/* Copyright (c) 2015, Stefan Eilemann <eile@equalizergraphics.com>
- *                     Daniel Nachbaur <danielnachbaur@gmail.com>
+/* Copyright (c) 2015-2016, Stefan Eilemann <eile@equalizergraphics.com>
+ *                          Daniel Nachbaur <danielnachbaur@gmail.com>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
@@ -54,7 +54,7 @@ EQ_API bool compile( const GLEWContext* glewContext,
  */
 EQ_API bool linkProgram( const GLEWContext* glewContext,
                          const unsigned program, const char* vertexShaderSource,
-                         const char* fragmentShaderSource );
+                         const char* fragmentShaderSource, const char* geometryShaderSource = nullptr );
 
 }
 }

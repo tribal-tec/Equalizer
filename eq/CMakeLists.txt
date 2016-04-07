@@ -244,13 +244,12 @@ if(WIN32)
 endif()
 
 if(EQ_QT_USED)
-  qt5_wrap_cpp(QT_MOC_OUTFILES
+  list(APPEND EQUALIZER_HEADERS
     qt/window.h
     qt/windowFactory.h
     qt/windowSystem.h
     )
   list(APPEND EQUALIZER_SOURCES
-    ${QT_MOC_OUTFILES}
     qt/eventHandler.cpp
     qt/messagePump.cpp
     qt/pipe.cpp
