@@ -283,5 +283,12 @@ bool MasterConfig::handleEvent( eq::EventICommand command )
     return _redraw;
 }
 
+void MasterConfig::handleEvents()
+{
+    Config::handleEvents();
+    if( getApplication()->handleEvents( ))
+        _redraw = true;
+}
+
 }
 }

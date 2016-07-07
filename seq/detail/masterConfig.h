@@ -31,19 +31,21 @@ class MasterConfig : public Config
 public:
     explicit MasterConfig( eq::ServerPtr parent );
 
-    virtual bool init();
-    virtual bool run( co::Object* frameData );
-    virtual bool exit();
+    bool init() final;
+    bool run( co::Object* frameData ) final;
+    bool exit() final;
 
-    virtual bool needRedraw() { return _redraw; }
-    virtual uint32_t startFrame();
+    bool needRedraw() final { return _redraw; }
+    uint32_t startFrame() final;
 
 protected:
-    virtual ~MasterConfig();
+    ~MasterConfig();
 #ifndef EQ_2_0_API
-    virtual bool handleEvent( const eq::ConfigEvent* event );
+    bool handleEvent( const eq::ConfigEvent* event ) final;
 #endif
-    virtual bool handleEvent( eq::EventICommand command );
+    bool handleEvent( eq::EventICommand command ) final;
+
+    void handleEvents() final;
 
 private:
     uint128_t _currentViewID;
