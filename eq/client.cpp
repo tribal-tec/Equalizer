@@ -34,6 +34,7 @@
 #include <eq/fabric/view.h>
 
 #include <eq/server/localServer.h>
+#include <eq/server/global.h>
 
 #include <co/iCommand.h>
 #include <co/connection.h>
@@ -208,6 +209,9 @@ bool Client::initLocal( const int argc, char** argv )
             std::istringstream unitString( argv[++i] );
             unitString >> _impl->modelUnit;
         }
+        else
+            server::Global::instance()->setNodeSAttribute( server::Node::SATTR_LAUNCH_COMMAND,
+                                               server::Global::instance()->getNodeSAttribute( server::Node::SATTR_LAUNCH_COMMAND ) + " " + argv[i] );
     }
     LBVERB << "Launching " << getNodeID() << std::endl;
 

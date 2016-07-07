@@ -129,6 +129,9 @@ public:
 
     /** Delete the given view data. @version 1.0 */
     SEQ_API virtual void destroyViewData( ViewData* viewData );
+
+    /** Handle user events once per frame */
+    virtual bool handleEvents() { return false; }
     //@}
 
     /** @name Internal */

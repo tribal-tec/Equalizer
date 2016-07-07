@@ -239,5 +239,12 @@ void MasterConfig::addStatistic( const Statistic& stat )
     }
 }
 
+void MasterConfig::handleEvents()
+{
+    Config::handleEvents();
+    if( getApplication()->handleEvents( ))
+        _redraw = true;
+}
+
 }
 }

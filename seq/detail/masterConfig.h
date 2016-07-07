@@ -39,7 +39,8 @@ public:
     uint32_t startFrame() final;
 
 protected:
-    virtual ~MasterConfig();
+    ~MasterConfig();
+    void handleEvents() final;
 
 private:
     uint128_t _currentViewID;
