@@ -108,10 +108,8 @@ void GLWindow::initGLEW()
 
     _impl->glewContext = new GLEWContext;
 
-#ifdef __linux__
     // http://sourceforge.net/p/glew/patches/40/
     glewExperimental = true;
-#endif
 
     const GLenum result = glewInit();
     glGetError(); // eat GL errors from buggy glew implementation

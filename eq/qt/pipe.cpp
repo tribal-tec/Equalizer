@@ -19,6 +19,7 @@
 
 #include <eq/pipe.h>
 #include <QDesktopWidget>
+#include <QOpenGLContext>
 
 namespace eq
 {
@@ -38,6 +39,19 @@ bool Pipe::configInit()
 
     pipe->setPixelViewport( PixelViewport( rect.x(), rect.y(),
                                            rect.width(), rect.height( )));
+
+    QSurfaceFormat format;
+    format.setProfile( QSurfaceFormat::CoreProfile );
+    format.setMajorVersion( std::numeric_limits< int >::max( ));
+    format.setMinorVersion( std::numeric_limits< int >::max( ));
+
+    QOpenGLContext context;
+    context.setFormat( format );
+    context.create();
+    std::stringstream vers;
+    vers << context.format().majorVersion() << "."
+         << context.format().minorVersion();
+    _maxOpenGLVersion = std::stof( vers.str( ));
     return true;
 }
 

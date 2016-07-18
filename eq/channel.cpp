@@ -411,6 +411,11 @@ void Channel::frameViewFinish( const uint128_t& frameID )
 
 void Channel::frameDrawOverlay( const uint128_t& )
 {
+    const bool coreProfile = getWindow()->getIAttribute(
+                WindowSettings::IATTR_HINT_CORE_PROFILE ) == ON;
+    if( coreProfile )
+        return;
+
     applyOverlayState();
 
 #ifdef EQUALIZER_USE_DEFLECT

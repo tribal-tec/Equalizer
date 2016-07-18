@@ -2,6 +2,10 @@
 
 # one-pipe configuration that streams its output to a local Deflect host (Tide)
 
+    global
+    {
+        EQ_WINDOW_IATTR_HINT_CORE_PROFILE                 ON
+    }
 server
 {
     config

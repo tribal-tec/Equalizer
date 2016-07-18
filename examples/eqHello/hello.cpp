@@ -30,6 +30,11 @@
  * rendering spinning quads around the origin.
  */
 
+#ifdef EQUALIZER_USE_QT5WIDGETS
+#  include <QApplication>
+#  include <QScopedPointer>
+#endif
+
 #include <seq/sequel.h>
 #include <stdlib.h>
 
@@ -84,9 +89,16 @@ public:
 typedef lunchbox::RefPtr< Application > ApplicationPtr;
 }
 
-int main( const int argc, char** argv )
+int main( int argc, char** argv )
 {
     eqHello::ApplicationPtr app = new eqHello::Application;
+
+#ifdef EQUALIZER_USE_QT5WIDGETS
+#  ifdef __linux__
+        ::XInitThreads();
+#  endif
+    QScopedPointer< QApplication > qtApp( new QApplication( argc, argv ));
+#endif
 
     if( app->init( argc, argv, 0 ) && app->run( 0 ) && app->exit( ))
         return EXIT_SUCCESS;
